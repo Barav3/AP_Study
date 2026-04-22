@@ -2,6 +2,7 @@ import { Routes, Route, Link } from "react-router-dom";
 import Home from "./pages/Home.jsx";
 import Subject from "./pages/Subject.jsx";
 import Admin from "./pages/Admin.jsx";
+import Guide from "./pages/Guide.jsx";
 
 export default function App() {
   return (
@@ -9,6 +10,7 @@ export default function App() {
       <Route path="/" element={<Home />} />
       <Route path="/s/:subjectId" element={<Subject />} />
       <Route path="/admin" element={<Admin />} />
+      <Route path="/guide" element={<Guide />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

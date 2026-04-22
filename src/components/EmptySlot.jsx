@@ -9,8 +9,9 @@ export default function EmptySlot({ subject }) {
         No study app is deployed to this slot yet. Head to the admin panel to paste a
         URL or upload a bundle — then this world will light up.
       </p>
-      <div style={{ display: "flex", gap: 10 }}>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
         <Link to="/" className="btn">← Back to hub</Link>
+        <Link to="/guide" className="btn">How does this work?</Link>
         <Link to="/admin" className="btn primary">Deploy an app</Link>
       </div>
     </div>

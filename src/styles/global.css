@@ -275,3 +275,60 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing:
   background: linear-gradient(135deg, var(--tile-color) 0%, color-mix(in srgb, var(--tile-color) 70%, #000) 100%);
 }
 .admin .preview-tile .icon { font-size: 28px; }
+
+/* ---------- Guide page ---------- */
+.guide {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 32px 20px 60px;
+}
+.guide-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.guide-header h1 { margin: 0 0 6px; font-size: 32px; }
+.guide-header .note { color: var(--text-dim); font-size: 14px; max-width: 540px; margin: 0; line-height: 1.55; }
+.guide .card { margin-bottom: 18px; padding: 24px; }
+.guide .card h2 { font-size: 20px; margin-bottom: 12px; }
+.guide .card h3 {
+  font-size: 15px;
+  margin-top: 22px;
+  margin-bottom: 6px;
+  color: var(--accent);
+  font-family: var(--font-ui);
+  letter-spacing: 0;
+}
+.guide .card p { line-height: 1.65; color: var(--text); margin: 8px 0; }
+.guide .card .note { color: var(--text-dim); font-size: 13px; line-height: 1.55; }
+.guide-list {
+  line-height: 1.8;
+  color: var(--text);
+  padding-left: 22px;
+  margin: 10px 0;
+}
+.guide-list li { margin-bottom: 4px; }
+.guide .code-block {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #c7d2ea;
+  overflow-x: auto;
+  margin: 10px 0;
+}
+.guide code {
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1px 6px;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 12.5px;
+  color: #c7d2ea;
+}

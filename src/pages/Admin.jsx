@@ -251,13 +251,22 @@ function AdminPanel({ session }) {
       </div>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Quick setup</h3>
-        <ol style={{ color: "var(--text-dim)", lineHeight: 1.7 }}>
-          <li>Create a Supabase project. Run <code>supabase/schema.sql</code> in the SQL editor.</li>
-          <li>In Auth → Users, create yourself an email/password user (this is the admin).</li>
-          <li>Copy <code>.env.example</code> → <code>.env</code> and fill in the URL + anon key.</li>
-          <li>Come back here, sign in, and point a slot at any deployed app URL.</li>
-        </ol>
+        <h3 style={{ marginTop: 0 }}>Need help?</h3>
+        <p style={{ color: "var(--text-dim)", lineHeight: 1.7, marginTop: 0 }}>
+          The <Link to="/guide">Guide</Link> walks through deploying a mini-app,
+          pasting its URL into a slot, and troubleshooting iframe embedding issues.
+        </p>
+        <details style={{ marginTop: 12 }}>
+          <summary style={{ cursor: "pointer", color: "var(--text-dim)" }}>
+            First-time hub setup (Supabase)
+          </summary>
+          <ol style={{ color: "var(--text-dim)", lineHeight: 1.7, marginTop: 8 }}>
+            <li>Create a Supabase project. Run <code>supabase/schema.sql</code> in the SQL editor.</li>
+            <li>In Auth → Users, create yourself an email/password user (this is the admin).</li>
+            <li>Copy <code>.env.example</code> → <code>.env</code> and fill in the URL + anon key. On Vercel, add the same two env vars in Project Settings.</li>
+            <li>Come back here, sign in, and point a slot at any deployed app URL.</li>
+          </ol>
+        </details>
       </div>
     </div>
   );

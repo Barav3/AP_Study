@@ -58,6 +58,7 @@ export default function Home() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
+          <Link to="/guide" className="btn">Guide</Link>
           <Link to="/admin" className="btn">Admin</Link>
         </div>
       </header>
