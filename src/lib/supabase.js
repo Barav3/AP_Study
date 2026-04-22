@@ -3,17 +3,32 @@ import { createClient } from "@supabase/supabase-js";
 const url = import.meta.env.VITE_SUPABASE_URL;
 const anon = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!url || !anon) {
+export const hasSupabase = Boolean(url && anon);
+
+if (!hasSupabase) {
   console.warn(
-    "[ap-hub] Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. Copy .env.example to .env and fill in Supabase credentials."
+    "[ap-hub] Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. Running in local-only mode — tiles render from the hardcoded subject list, DB-backed features (admin, deploy URLs) are disabled."
   );
 }
 
-export const supabase = createClient(url || "", anon || "");
+// If env vars are missing, createClient() with empty strings throws synchronously
+// and kills the whole app before React mounts. Guard it so the hub still loads
+// in local-only mode and the Home page can fall back to AP_SUBJECTS.
+export const supabase = hasSupabase
+  ? createClient(url, anon)
+  : null;
+
+function requireSupabase() {
+  if (!supabase) {
+    throw new Error("Supabase not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.");
+  }
+  return supabase;
+}
 
 // --- Subjects API -----------------------------------------------------------
 
 export async function fetchSubjects() {
+  if (!supabase) return [];
   const { data, error } = await supabase
     .from("subjects")
     .select("*")
@@ -23,6 +38,7 @@ export async function fetchSubjects() {
 }
 
 export async function fetchSubject(id) {
+  if (!supabase) return null;
   const { data, error } = await supabase
     .from("subjects")
     .select("*")
@@ -33,7 +49,8 @@ export async function fetchSubject(id) {
 }
 
 export async function upsertSubject(subject) {
-  const { error } = await supabase
+  const client = requireSupabase();
+  const { error } = await client
     .from("subjects")
     .upsert({ ...subject, updated_at: new Date().toISOString() }, { onConflict: "id" });
   if (error) throw error;
@@ -42,19 +59,26 @@ export async function upsertSubject(subject) {
 // --- Auth helpers -----------------------------------------------------------
 
 export async function signInWithPassword(email, password) {
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const client = requireSupabase();
+  const { error } = await client.auth.signInWithPassword({ email, password });
   if (error) throw error;
 }
 
 export async function signOut() {
+  if (!supabase) return;
   await supabase.auth.signOut();
 }
 
 export function onAuthChange(cb) {
+  if (!supabase) {
+    cb(null);
+    return { data: { subscription: { unsubscribe() {} } } };
+  }
   return supabase.auth.onAuthStateChange((_e, session) => cb(session));
 }
 
 export async function getSession() {
+  if (!supabase) return null;
   const { data } = await supabase.auth.getSession();
   return data.session;
 }
