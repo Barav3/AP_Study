@@ -5,18 +5,17 @@ import {
   signOut,
   getSession,
   onAuthChange,
-  fetchSubjects,
-  upsertSubject,
+  fetchActivities,
+  upsertActivity,
+  deleteActivity,
 } from "../lib/supabase.js";
-import { AP_SUBJECTS, findSubject, isActiveSubjectId } from "../lib/subjects.js";
+import { AP_SUBJECTS } from "../lib/subjects.js";
 
-// Admin is the password-gated "upload portal". It lets the admin:
+// Admin is the password-gated upload portal. It lets the admin:
 //   1. Sign in with Supabase email/password
-//   2. Pick any AP subject slot
-//   3. Assign a URL (v1) or bundle path (v1.1) to that slot
-//   4. Override tile metadata (icon, color) per slot
-//
-// Everything writes through RLS; the anon key alone cannot upsert subjects.
+//   2. Pick any AP subject (folder)
+//   3. Add, edit, and remove activities (mini-apps) inside that subject
+//   4. For each activity, choose URL or inline HTML deploy
 
 export default function Admin() {
   const [session, setSession] = useState(null);
@@ -31,9 +30,7 @@ export default function Admin() {
     return () => data?.subscription?.unsubscribe();
   }, []);
 
-  if (checking) {
-    return <div className="center-screen"><p>Checking session…</p></div>;
-  }
+  if (checking) return <div className="center-screen"><p>Checking session…</p></div>;
   if (!session) return <LoginForm />;
   return <AdminPanel session={session} />;
 }
@@ -46,45 +43,28 @@ function LoginForm() {
 
   const submit = async (e) => {
     e.preventDefault();
-    setErr(null);
-    setBusy(true);
-    try {
-      await signInWithPassword(email, password);
-    } catch (e) {
-      setErr(e.message || String(e));
-    } finally {
-      setBusy(false);
-    }
+    setErr(null); setBusy(true);
+    try { await signInWithPassword(email, password); }
+    catch (e) { setErr(e.message || String(e)); }
+    finally { setBusy(false); }
   };
 
   return (
     <div className="center-screen">
-      <form className="card" style={{
-        background: "var(--surface)", border: "1px solid var(--border)",
-        borderRadius: "var(--radius-lg)", padding: 28, width: "min(420px, 92vw)",
-        textAlign: "left",
-      }} onSubmit={submit}>
+      <form className="card" style={{ padding: 28, width: "min(420px, 92vw)", textAlign: "left" }} onSubmit={submit}>
         <h1 style={{ marginTop: 0 }}>Admin sign in</h1>
         <p className="note" style={{ color: "var(--text-dim)", fontSize: 13 }}>
           Uploads are locked to the admin account. Use the email/password you set in Supabase Auth.
         </p>
         <div style={{ marginTop: 16 }}>
           <label className="label">Email</label>
-          <input
-            className="input" type="email" required autoComplete="email"
-            value={email} onChange={(e) => setEmail(e.target.value)}
-          />
+          <input className="input" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
         </div>
         <div style={{ marginTop: 12 }}>
           <label className="label">Password</label>
-          <input
-            className="input" type="password" required autoComplete="current-password"
-            value={password} onChange={(e) => setPassword(e.target.value)}
-          />
+          <input className="input" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
         </div>
-        {err && (
-          <div style={{ color: "var(--danger)", marginTop: 10, fontSize: 13 }}>{err}</div>
-        )}
+        {err && <div style={{ color: "var(--danger)", marginTop: 10, fontSize: 13 }}>{err}</div>}
         <div style={{ display: "flex", gap: 10, marginTop: 18, justifyContent: "space-between" }}>
           <Link to="/" className="btn">← Hub</Link>
           <button className="btn primary" type="submit" disabled={busy}>
@@ -97,269 +77,257 @@ function LoginForm() {
 }
 
 function AdminPanel({ session }) {
-  const [remote, setRemote] = useState([]);
-  const [selectedId, setSelectedId] = useState(AP_SUBJECTS[0].id);
+  const [subjectId, setSubjectId] = useState(AP_SUBJECTS[0].id);
+  const [activities, setActivities] = useState([]);
+  const [editing, setEditing] = useState(null); // activity draft or null
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
-  // Which deploy source the admin is editing for this slot.
-  // 'url' = paste a hosted URL, 'inline' = paste HTML or upload a .html file.
-  const [mode, setMode] = useState("url");
 
-  const reload = () => fetchSubjects().then(setRemote).catch((e) => setStatus({ type: "err", msg: e.message }));
+  const subject = useMemo(
+    () => AP_SUBJECTS.find((s) => s.id === subjectId),
+    [subjectId]
+  );
 
-  useEffect(() => { reload(); }, []);
+  const reload = () => {
+    fetchActivities(subjectId)
+      .then(setActivities)
+      .catch((e) => setStatus({ type: "err", msg: e.message }));
+  };
 
-  const merged = useMemo(() => {
-    // Local list is the gate — commented-out subjects never appear in admin
-    // dropdown, even if they exist in Supabase.
-    const byId = new Map(AP_SUBJECTS.map((s) => [s.id, { ...s }]));
-    for (const r of remote) {
-      if (!isActiveSubjectId(r.id)) continue;
-      const prev = byId.get(r.id) || {};
-      byId.set(r.id, { ...prev, ...r });
-    }
-    return Array.from(byId.values());
-  }, [remote]);
-
-  const selected = merged.find((s) => s.id === selectedId) || findSubject(selectedId);
-
-  const [draft, setDraft] = useState(selected);
   useEffect(() => {
-    setDraft(selected);
-    // Default the mode tab to whatever the slot is currently using.
-    if (selected?.inline_html) setMode("inline");
-    else setMode("url");
-  }, [selectedId, remote]);
+    reload();
+    setEditing(null);
+    setStatus(null);
+  }, [subjectId]);
+
+  const startNew = () => {
+    const base = (subject?.id || "activity") + "-" + Date.now().toString(36);
+    setEditing({
+      id: base,
+      subject_id: subjectId,
+      name: "",
+      icon: "🎯",
+      description: "",
+      deploy_mode: "inline",
+      deploy_url: "",
+      inline_html: "",
+      sort_order: activities.length,
+    });
+    setStatus(null);
+  };
+
+  const startEdit = (a) => { setEditing({ ...a }); setStatus(null); };
 
   const save = async () => {
-    if (!draft) return;
+    if (!editing) return;
+    if (!editing.name.trim()) { setStatus({ type: "err", msg: "Activity name is required." }); return; }
     setBusy(true); setStatus(null);
     try {
-      // Mode determines which deploy field wins. The other is cleared so the
-      // slot has exactly one source of truth.
       const payload = {
-        id: draft.id,
-        name: draft.name,
-        icon: draft.icon,
-        color: draft.color,
-        description: draft.description || null,
-        category: draft.category,
+        id: editing.id,
+        subject_id: subjectId,
+        name: editing.name.trim(),
+        icon: editing.icon || null,
+        description: editing.description || null,
         deploy_mode: null,
         deploy_url: null,
         inline_html: null,
-        bundle_path: null,
+        sort_order: editing.sort_order ?? 0,
       };
-      if (mode === "url" && draft.deploy_url) {
+      if (editing.deploy_mode === "url" && editing.deploy_url) {
         payload.deploy_mode = "url";
-        payload.deploy_url = draft.deploy_url;
-      } else if (mode === "inline" && draft.inline_html) {
+        payload.deploy_url = editing.deploy_url;
+      } else if (editing.deploy_mode === "inline" && editing.inline_html) {
         payload.deploy_mode = "inline";
-        payload.inline_html = draft.inline_html;
+        payload.inline_html = editing.inline_html;
       }
-      await upsertSubject(payload);
-      await reload();
+      await upsertActivity(payload);
       setStatus({ type: "ok", msg: "Saved." });
+      setEditing(null);
+      reload();
     } catch (e) {
       setStatus({ type: "err", msg: e.message || String(e) });
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   };
 
-  const clearSlot = async () => {
-    setDraft((d) => ({ ...d, deploy_url: "", inline_html: "", bundle_path: "" }));
+  const remove = async (a) => {
+    if (!confirm(`Delete "${a.name}"? This can't be undone.`)) return;
+    setBusy(true);
+    try {
+      await deleteActivity(a.id);
+      setStatus({ type: "ok", msg: "Deleted." });
+      reload();
+    } catch (e) {
+      setStatus({ type: "err", msg: e.message || String(e) });
+    } finally { setBusy(false); }
   };
 
-  const update = (patch) => setDraft((d) => ({ ...d, ...patch }));
+  const update = (patch) => setEditing((d) => ({ ...d, ...patch }));
 
-  // File picker → read as text → stash in inline_html.
   const onFilePicked = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      setStatus({ type: "err", msg: "File too big (max 2 MB). Inline mode is for single-file HTML apps." });
-      return;
+      setStatus({ type: "err", msg: "File too big (max 2 MB)." }); return;
     }
     const text = await file.text();
     update({ inline_html: text });
-    setStatus({ type: "ok", msg: `Loaded ${file.name} (${Math.round(file.size / 1024)} KB). Click Save slot to publish.` });
+    setStatus({ type: "ok", msg: `Loaded ${file.name} (${Math.round(file.size / 1024)} KB). Click Save to publish.` });
   };
 
   return (
     <div className="admin">
-      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+      <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
         <div>
           <h1 style={{ margin: 0 }}>Admin</h1>
           <p className="note">Signed in as {session.user?.email}</p>
         </div>
         <div style={{ display: "flex", gap: 8 }}>
+          <Link to="/guide" className="btn">Guide</Link>
           <Link to="/" className="btn">← Hub</Link>
           <button className="btn" onClick={signOut}>Sign out</button>
         </div>
       </header>
 
+      {/* Subject picker */}
       <div className="card">
         <div className="row">
-          <label className="label">Subject slot</label>
-          <select
-            className="select"
-            value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-          >
-            {merged.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-                {(s.deploy_url || s.inline_html || s.bundle_path) ? "  •  LIVE" : ""}
-              </option>
+          <label className="label">Subject folder</label>
+          <select className="select" value={subjectId} onChange={(e) => setSubjectId(e.target.value)}>
+            {AP_SUBJECTS.map((s) => (
+              <option key={s.id} value={s.id}>{s.icon} {s.name}</option>
             ))}
           </select>
         </div>
+        <p className="note" style={{ marginTop: 4 }}>
+          Each subject is a folder that holds multiple mini-apps (activities).
+          Pick a subject above, then add or edit its activities below.
+        </p>
+      </div>
 
-        {draft && (
-          <>
-            <div className="preview-tile" style={{ "--tile-color": draft.color }}>
-              <span className="icon">{draft.icon}</span>
-              <div>
-                <div style={{ fontWeight: 700 }}>{draft.name}</div>
-                <div style={{ fontSize: 11, opacity: .85, textTransform: "uppercase", letterSpacing: ".1em" }}>
-                  {draft.category}
+      {/* Activity list for selected subject */}
+      <div className="card">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, gap: 12, flexWrap: "wrap" }}>
+          <h3 style={{ margin: 0 }}>Activities in {subject?.name}</h3>
+          <button className="btn primary" onClick={startNew} disabled={busy || !!editing}>
+            + New activity
+          </button>
+        </div>
+        {activities.length === 0 ? (
+          <p className="note">No activities yet. Click "+ New activity" to add one.</p>
+        ) : (
+          <ul className="activity-list">
+            {activities.map((a) => (
+              <li key={a.id} className="activity-list-item">
+                <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                  <span style={{ fontSize: 22 }} aria-hidden>{a.icon || "🎯"}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 600 }}>{a.name}</div>
+                    <div className="note" style={{ fontSize: 12 }}>
+                      {a.deploy_mode === "url"    && <>URL · <code>{a.deploy_url}</code></>}
+                      {a.deploy_mode === "inline" && <>Inline HTML · {((a.inline_html || "").length / 1024).toFixed(1)} KB</>}
+                      {!a.deploy_mode             && <>No deploy configured</>}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-
-            <div className="row row-2" style={{ marginTop: 18 }}>
-              <div>
-                <label className="label">Icon (emoji)</label>
-                <input className="input" value={draft.icon || ""} onChange={(e) => update({ icon: e.target.value })} />
-              </div>
-              <div>
-                <label className="label">Tile color (hex)</label>
-                <input className="input" value={draft.color || ""} onChange={(e) => update({ color: e.target.value })} />
-              </div>
-            </div>
-
-            <div className="row">
-              <label className="label">Display name</label>
-              <input className="input" value={draft.name || ""} onChange={(e) => update({ name: e.target.value })} />
-            </div>
-
-            <div className="row">
-              <label className="label">Description</label>
-              <textarea className="textarea" value={draft.description || ""} onChange={(e) => update({ description: e.target.value })} />
-            </div>
-
-            <div className="row">
-              <label className="label">Deploy source</label>
-              <div className="mode-tabs" role="tablist">
-                <button
-                  role="tab"
-                  aria-selected={mode === "url"}
-                  className={`chip ${mode === "url" ? "active" : ""}`}
-                  onClick={() => setMode("url")}
-                  type="button"
-                >
-                  🌐 Hosted URL
-                </button>
-                <button
-                  role="tab"
-                  aria-selected={mode === "inline"}
-                  className={`chip ${mode === "inline" ? "active" : ""}`}
-                  onClick={() => setMode("inline")}
-                  type="button"
-                >
-                  📝 Paste / upload HTML
-                </button>
-              </div>
-            </div>
-
-            {mode === "url" && (
-              <div className="row">
-                <label className="label">Deployed app URL</label>
-                <input
-                  className="input"
-                  placeholder="https://my-study-app.vercel.app"
-                  value={draft.deploy_url || ""}
-                  onChange={(e) => update({ deploy_url: e.target.value })}
-                />
-                <p className="note">
-                  Paste the URL of an app you've hosted elsewhere (Vercel, Netlify, GitHub Pages, etc).
-                  It loads in a sandboxed iframe when users enter this subject.
-                </p>
-              </div>
-            )}
-
-            {mode === "inline" && (
-              <>
-                <div className="row">
-                  <label className="label">Upload an .html file</label>
-                  <input
-                    type="file"
-                    accept=".html,text/html"
-                    className="input"
-                    onChange={onFilePicked}
-                  />
-                  <p className="note">
-                    Pick a single-file HTML app (max 2 MB). Contents get pasted into the editor below — you can tweak before saving.
-                  </p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <Link to={`/s/${subjectId}/a/${a.id}`} className="btn">Preview ↗</Link>
+                  <button className="btn" onClick={() => startEdit(a)} disabled={busy || !!editing}>Edit</button>
+                  <button className="btn" onClick={() => remove(a)} disabled={busy} style={{ color: "var(--danger)" }}>Delete</button>
                 </div>
-
-                <div className="row">
-                  <label className="label">Paste HTML (or edit what you uploaded)</label>
-                  <textarea
-                    className="textarea"
-                    style={{ minHeight: 220, fontFamily: "SFMono-Regular, Consolas, monospace", fontSize: 12.5 }}
-                    placeholder={`<!doctype html>\n<html>\n  <head><title>My study app</title></head>\n  <body>\n    <h1>Hello from inside the hub</h1>\n    <script>/* your code */</script>\n  </body>\n</html>`}
-                    value={draft.inline_html || ""}
-                    onChange={(e) => update({ inline_html: e.target.value })}
-                  />
-                  <p className="note">
-                    Works for single-file HTML apps: inline &lt;style&gt;, inline &lt;script&gt;, and data-URI images.
-                    External relative paths (src="./app.js") won't resolve — bundle those into the file or use Hosted URL mode.
-                    {draft.inline_html && (
-                      <> <strong>Size:</strong> {(new Blob([draft.inline_html]).size / 1024).toFixed(1)} KB.</>
-                    )}
-                  </p>
-                </div>
-              </>
-            )}
-
-            <div className="actions">
-              <button className="btn primary" onClick={save} disabled={busy}>
-                {busy ? "Saving…" : "Save slot"}
-              </button>
-              <button className="btn" onClick={clearSlot} disabled={busy}>
-                Clear deploy
-              </button>
-              <Link to={`/s/${draft.id}`} className="btn">Preview ↗</Link>
-            </div>
-
-            {status && (
-              <div style={{
-                marginTop: 14, fontSize: 13,
-                color: status.type === "ok" ? "var(--ok)" : "var(--danger)",
-              }}>{status.msg}</div>
-            )}
-          </>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
+
+      {/* Editor panel (shown when creating or editing) */}
+      {editing && (
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>{activities.find((a) => a.id === editing.id) ? "Edit activity" : "New activity"}</h3>
+
+          <div className="row row-2">
+            <div>
+              <label className="label">Icon (emoji)</label>
+              <input className="input" value={editing.icon || ""} onChange={(e) => update({ icon: e.target.value })} placeholder="🎯" />
+            </div>
+            <div>
+              <label className="label">Display name</label>
+              <input className="input" value={editing.name} onChange={(e) => update({ name: e.target.value })} placeholder="Practice Tests" />
+            </div>
+          </div>
+
+          <div className="row">
+            <label className="label">Description (optional)</label>
+            <input className="input" value={editing.description || ""} onChange={(e) => update({ description: e.target.value })} placeholder="Full AP-format practice exams" />
+          </div>
+
+          <div className="row">
+            <label className="label">Deploy source</label>
+            <div className="mode-tabs">
+              <button type="button" className={`chip ${editing.deploy_mode === "url" ? "active" : ""}`} onClick={() => update({ deploy_mode: "url" })}>
+                🌐 Hosted URL
+              </button>
+              <button type="button" className={`chip ${editing.deploy_mode === "inline" ? "active" : ""}`} onClick={() => update({ deploy_mode: "inline" })}>
+                📝 Paste / upload HTML
+              </button>
+            </div>
+          </div>
+
+          {editing.deploy_mode === "url" && (
+            <div className="row">
+              <label className="label">Deployed app URL</label>
+              <input className="input" placeholder="https://my-study-app.vercel.app" value={editing.deploy_url || ""} onChange={(e) => update({ deploy_url: e.target.value })} />
+              <p className="note">The activity loads this URL in a sandboxed iframe.</p>
+            </div>
+          )}
+
+          {editing.deploy_mode === "inline" && (
+            <>
+              <div className="row">
+                <label className="label">Upload an .html file</label>
+                <input type="file" accept=".html,text/html" className="input" onChange={onFilePicked} />
+                <p className="note">Single-file HTML apps only (max 2 MB).</p>
+              </div>
+              <div className="row">
+                <label className="label">Paste HTML (or edit what you uploaded)</label>
+                <textarea
+                  className="textarea"
+                  style={{ minHeight: 220, fontFamily: "SFMono-Regular, Consolas, monospace", fontSize: 12.5 }}
+                  placeholder={`<!doctype html>\n<html>\n  <head><title>My app</title></head>\n  <body>...</body>\n</html>`}
+                  value={editing.inline_html || ""}
+                  onChange={(e) => update({ inline_html: e.target.value })}
+                />
+                {editing.inline_html && (
+                  <p className="note">Size: {(new Blob([editing.inline_html]).size / 1024).toFixed(1)} KB.</p>
+                )}
+              </div>
+            </>
+          )}
+
+          <div className="actions">
+            <button className="btn primary" onClick={save} disabled={busy}>
+              {busy ? "Saving…" : "Save activity"}
+            </button>
+            <button className="btn" onClick={() => setEditing(null)} disabled={busy}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {status && (
+        <div className="card" style={{ marginTop: 14, fontSize: 13, color: status.type === "ok" ? "var(--ok)" : "var(--danger)" }}>
+          {status.msg}
+        </div>
+      )}
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Need help?</h3>
         <p style={{ color: "var(--text-dim)", lineHeight: 1.7, marginTop: 0 }}>
           The <Link to="/guide">Guide</Link> walks through deploying a mini-app,
-          pasting its URL into a slot, and troubleshooting iframe embedding issues.
+          pasting its URL or HTML into an activity, and troubleshooting iframe issues.
         </p>
-        <details style={{ marginTop: 12 }}>
-          <summary style={{ cursor: "pointer", color: "var(--text-dim)" }}>
-            First-time hub setup (Supabase)
-          </summary>
-          <ol style={{ color: "var(--text-dim)", lineHeight: 1.7, marginTop: 8 }}>
-            <li>Create a Supabase project. Run <code>supabase/schema.sql</code> in the SQL editor.</li>
-            <li>In Auth → Users, create yourself an email/password user (this is the admin).</li>
-            <li>Copy <code>.env.example</code> → <code>.env</code> and fill in the URL + anon key. On Vercel, add the same two env vars in Project Settings.</li>
-            <li>Come back here, sign in, and point a slot at any deployed app URL.</li>
-          </ol>
-        </details>
       </div>
     </div>
   );

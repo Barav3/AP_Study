@@ -9,6 +9,7 @@ export default function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/s/:subjectId" element={<Subject />} />
+      <Route path="/s/:subjectId/a/:activityId" element={<Subject />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/guide" element={<Guide />} />
       <Route path="*" element={<NotFound />} />

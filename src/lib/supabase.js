@@ -56,6 +56,64 @@ export async function upsertSubject(subject) {
   if (error) throw error;
 }
 
+// --- Activities API ---------------------------------------------------------
+// Activities are the actual mini-apps. Each subject is a folder of activities.
+
+export async function fetchActivities(subjectId) {
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("activities")
+    .select("*")
+    .eq("subject_id", subjectId)
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  if (error) throw error;
+  return data || [];
+}
+
+export async function fetchActivity(subjectId, activityId) {
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("activities")
+    .select("*")
+    .eq("subject_id", subjectId)
+    .eq("id", activityId)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+// Returns the count of activities per subject_id, for the "n apps" tile badges.
+export async function fetchActivityCounts() {
+  if (!supabase) return {};
+  const { data, error } = await supabase
+    .from("activities")
+    .select("subject_id");
+  if (error) throw error;
+  const counts = {};
+  for (const row of data || []) {
+    counts[row.subject_id] = (counts[row.subject_id] || 0) + 1;
+  }
+  return counts;
+}
+
+export async function upsertActivity(activity) {
+  const client = requireSupabase();
+  const { error } = await client
+    .from("activities")
+    .upsert({ ...activity, updated_at: new Date().toISOString() }, { onConflict: "id" });
+  if (error) throw error;
+}
+
+export async function deleteActivity(activityId) {
+  const client = requireSupabase();
+  const { error } = await client
+    .from("activities")
+    .delete()
+    .eq("id", activityId);
+  if (error) throw error;
+}
+
 // --- Auth helpers -----------------------------------------------------------
 
 export async function signInWithPassword(email, password) {

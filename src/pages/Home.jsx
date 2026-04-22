@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { AP_SUBJECTS, CATEGORIES, isActiveSubjectId } from "../lib/subjects.js";
-import { fetchSubjects } from "../lib/supabase.js";
+import { fetchSubjects, fetchActivityCounts } from "../lib/supabase.js";
 import SubjectTile from "../components/SubjectTile.jsx";
 
 // Merges the hardcoded canonical AP list with Supabase data. **Local is the
@@ -20,6 +20,7 @@ function mergeSubjects(local, remote) {
 
 export default function Home() {
   const [remote, setRemote] = useState([]);
+  const [activityCounts, setActivityCounts] = useState({});
   const [category, setCategory] = useState("All");
   const [query, setQuery] = useState("");
   const [err, setErr] = useState(null);
@@ -28,6 +29,9 @@ export default function Home() {
     fetchSubjects()
       .then(setRemote)
       .catch((e) => setErr(e.message || String(e)));
+    fetchActivityCounts()
+      .then(setActivityCounts)
+      .catch(() => {}); // non-fatal; tiles just won't show counts
   }, []);
 
   const subjects = useMemo(() => mergeSubjects(AP_SUBJECTS, remote), [remote]);
@@ -41,7 +45,7 @@ export default function Home() {
     });
   }, [subjects, category, query]);
 
-  const liveCount = subjects.filter((s) => s.deploy_url || s.inline_html || s.bundle_path).length;
+  const liveCount = subjects.filter((s) => (activityCounts[s.id] || 0) > 0).length;
 
   return (
     <div className="home">
@@ -92,7 +96,8 @@ export default function Home() {
           <SubjectTile
             key={s.id}
             subject={s}
-            deployed={!!(s.deploy_url || s.inline_html || s.bundle_path)}
+            activityCount={activityCounts[s.id] || 0}
+            deployed={(activityCounts[s.id] || 0) > 0}
           />
         ))}
       </div>
