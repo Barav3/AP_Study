@@ -21,70 +21,108 @@ export default function Guide() {
 
       {/* Quick version */}
       <section className="card">
-        <h2 style={{ marginTop: 0 }}>⚡ Quick version</h2>
+        <h2 style={{ marginTop: 0 }}>⚡ Quick version — pick one</h2>
+        <p style={{ marginTop: 0 }}>There are two ways to fill a slot:</p>
         <ol className="guide-list">
-          <li>Deploy any web app somewhere public (Vercel, Netlify, GitHub Pages — anywhere with a URL).</li>
-          <li>Copy the URL.</li>
-          <li>Go to <Link to="/admin">/admin</Link> → pick a subject → paste URL → save.</li>
+          <li>
+            <strong>In-house (easiest):</strong> paste an HTML file's code or upload a <code>.html</code> file
+            in <Link to="/admin">/admin</Link>. The hub hosts it for you.
+          </li>
+          <li>
+            <strong>Hosted URL:</strong> deploy a web app to Vercel/Netlify/etc, then paste its URL into
+            <Link to="/admin"> /admin</Link>.
+          </li>
         </ol>
-        <p className="note">That's it. The tile is live. Everything below is detail.</p>
+        <p className="note">
+          In-house is simplest for small apps (single-file HTML/CSS/JS). Hosted URL is
+          right for bigger apps like React builds that span multiple files.
+        </p>
       </section>
 
-      {/* Step by step */}
+      {/* In-house option */}
       <section className="card">
-        <h2 style={{ marginTop: 0 }}>📖 Step by step</h2>
+        <h2 style={{ marginTop: 0 }}>🏠 Option A — In-house (paste or upload HTML)</h2>
+        <p>
+          You don't need any external host. Write (or find) a single-file HTML app and
+          drop it right into the hub.
+        </p>
+
+        <h3>1. Make a single-file HTML app</h3>
+        <p>Anything that fits in one <code>.html</code> file works:</p>
+        <pre className="code-block">{`<!doctype html>
+<html>
+  <head><title>Flashcards</title></head>
+  <body>
+    <h1>My tiny study app</h1>
+    <button id="b">Click me</button>
+    <style>body { font-family: sans-serif; padding: 24px; }</style>
+    <script>
+      document.getElementById('b').onclick = () => alert('Hello from the hub!');
+    </script>
+  </body>
+</html>`}</pre>
+        <p className="note">
+          Allowed: inline <code>&lt;style&gt;</code>, inline <code>&lt;script&gt;</code>,
+          data-URI images (<code>&lt;img src="data:image/png;base64,..."&gt;</code>),
+          and fetches to public HTTPS APIs. Not allowed: relative file references like
+          <code> &lt;script src="./app.js"&gt;</code> — those would 404 because the hub
+          isn't serving the file; it embeds the whole HTML as-is.
+        </p>
+
+        <h3>2. Open <Link to="/admin">/admin</Link> and switch to "Paste / upload HTML"</h3>
+        <p>
+          In the deploy source row, click <strong>📝 Paste / upload HTML</strong>. You'll
+          see two boxes:
+        </p>
+        <ul className="guide-list">
+          <li><strong>File picker</strong> — choose a <code>.html</code> file; its contents load into the textarea.</li>
+          <li><strong>Textarea</strong> — or just paste/edit code directly.</li>
+        </ul>
+
+        <h3>3. Save and verify</h3>
+        <p>Click <strong>Save slot</strong>, then <strong>Preview ↗</strong> to see it live.</p>
+
+        <h3>Limits</h3>
+        <ul className="guide-list">
+          <li>Max file size: <strong>2 MB</strong>. Big enough for meaningful apps, small enough to keep the database fast.</li>
+          <li>Single file only — no multi-file React/Vue builds in this mode.</li>
+          <li>If your app is bigger or has a build step, use <em>Option B</em> below instead.</li>
+        </ul>
+      </section>
+
+      {/* Hosted URL option */}
+      <section className="card">
+        <h2 style={{ marginTop: 0 }}>🌐 Option B — Hosted URL (external deploy)</h2>
+        <p>For full apps with build steps, dependencies, or multiple files.</p>
 
         <h3>1. Have (or build) a web app</h3>
         <p>
           Any site that loads in a browser works — React, Vue, plain HTML, a game, a
-          flashcard app, a quiz, a simulator, a notebook. If you can open it at a URL,
-          you can embed it.
-        </p>
-        <p className="note">
-          Don't have one yet? The sibling project{" "}
+          flashcard app, a quiz, a simulator, a notebook. The sibling project{" "}
           <code>aphug-practice-tests</code> in this vault is a ready-to-deploy mini-app
           you can use to fill the AP HUG slot.
         </p>
 
         <h3>2. Deploy it to a public URL</h3>
-        <p>
-          Easiest route is Vercel. From your app folder:
-        </p>
+        <p>Easiest route is Vercel. From your app folder:</p>
         <pre className="code-block">{`npm install
 npm run build
 npx vercel --prod`}</pre>
         <p>
-          Vercel gives you a URL like <code>your-app-abc123.vercel.app</code>. That's
-          the URL you'll paste into the hub.
-        </p>
-        <p className="note">
-          Other hosts that work fine: Netlify, Cloudflare Pages, GitHub Pages, Render,
+          Vercel gives you a URL like <code>your-app-abc123.vercel.app</code>. Other
+          hosts that work fine: Netlify, Cloudflare Pages, GitHub Pages, Render,
           Railway, Surge — anywhere that serves HTTPS. Local URLs like{" "}
           <code>localhost:5173</code> only work while you're running the dev server on
           the same machine.
         </p>
 
-        <h3>3. Sign into the admin panel</h3>
-        <p>
-          Go to <Link to="/admin">/admin</Link>. You'll need the Supabase
-          email/password you set up during initial configuration (see{" "}
-          <code>SETUP.md</code> in the repo if you haven't done this yet).
-        </p>
-
-        <h3>4. Pick the slot and paste the URL</h3>
+        <h3>3. In <Link to="/admin">/admin</Link>, pick "🌐 Hosted URL" and paste</h3>
         <ol className="guide-list">
           <li>Pick the subject from the dropdown (e.g. "AP Human Geography").</li>
+          <li>Click the <strong>🌐 Hosted URL</strong> tab in the deploy source row.</li>
           <li>Paste your deployed URL into the <strong>Deployed app URL</strong> field.</li>
-          <li>Optionally tweak the icon emoji, tile color, display name, or description.</li>
-          <li>Click <strong>Save slot</strong>.</li>
+          <li>Click <strong>Save slot</strong>. Preview with the <strong>Preview ↗</strong> button.</li>
         </ol>
-
-        <h3>5. Verify it loads</h3>
-        <p>
-          Click <strong>Preview ↗</strong> in the admin panel, or go back to the hub
-          and click the tile. The app loads inside a fullscreen sandboxed iframe. Press
-          Esc or click "← Hub" to come back.
-        </p>
       </section>
 
       {/* What works */}

@@ -41,7 +41,7 @@ export default function Home() {
     });
   }, [subjects, category, query]);
 
-  const liveCount = subjects.filter((s) => s.deploy_url || s.bundle_path).length;
+  const liveCount = subjects.filter((s) => s.deploy_url || s.inline_html || s.bundle_path).length;
 
   return (
     <div className="home">
@@ -92,7 +92,7 @@ export default function Home() {
           <SubjectTile
             key={s.id}
             subject={s}
-            deployed={!!(s.deploy_url || s.bundle_path)}
+            deployed={!!(s.deploy_url || s.inline_html || s.bundle_path)}
           />
         ))}
       </div>

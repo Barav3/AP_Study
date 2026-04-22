@@ -101,6 +101,9 @@ function AdminPanel({ session }) {
   const [selectedId, setSelectedId] = useState(AP_SUBJECTS[0].id);
   const [status, setStatus] = useState(null);
   const [busy, setBusy] = useState(false);
+  // Which deploy source the admin is editing for this slot.
+  // 'url' = paste a hosted URL, 'inline' = paste HTML or upload a .html file.
+  const [mode, setMode] = useState("url");
 
   const reload = () => fetchSubjects().then(setRemote).catch((e) => setStatus({ type: "err", msg: e.message }));
 
@@ -121,23 +124,39 @@ function AdminPanel({ session }) {
   const selected = merged.find((s) => s.id === selectedId) || findSubject(selectedId);
 
   const [draft, setDraft] = useState(selected);
-  useEffect(() => { setDraft(selected); }, [selectedId, remote]);
+  useEffect(() => {
+    setDraft(selected);
+    // Default the mode tab to whatever the slot is currently using.
+    if (selected?.inline_html) setMode("inline");
+    else setMode("url");
+  }, [selectedId, remote]);
 
   const save = async () => {
     if (!draft) return;
     setBusy(true); setStatus(null);
     try {
-      await upsertSubject({
+      // Mode determines which deploy field wins. The other is cleared so the
+      // slot has exactly one source of truth.
+      const payload = {
         id: draft.id,
         name: draft.name,
         icon: draft.icon,
         color: draft.color,
         description: draft.description || null,
         category: draft.category,
-        deploy_mode: draft.deploy_url ? "url" : (draft.bundle_path ? "bundle" : null),
-        deploy_url: draft.deploy_url || null,
-        bundle_path: draft.bundle_path || null,
-      });
+        deploy_mode: null,
+        deploy_url: null,
+        inline_html: null,
+        bundle_path: null,
+      };
+      if (mode === "url" && draft.deploy_url) {
+        payload.deploy_mode = "url";
+        payload.deploy_url = draft.deploy_url;
+      } else if (mode === "inline" && draft.inline_html) {
+        payload.deploy_mode = "inline";
+        payload.inline_html = draft.inline_html;
+      }
+      await upsertSubject(payload);
       await reload();
       setStatus({ type: "ok", msg: "Saved." });
     } catch (e) {
@@ -148,10 +167,23 @@ function AdminPanel({ session }) {
   };
 
   const clearSlot = async () => {
-    setDraft((d) => ({ ...d, deploy_url: "", bundle_path: "" }));
+    setDraft((d) => ({ ...d, deploy_url: "", inline_html: "", bundle_path: "" }));
   };
 
   const update = (patch) => setDraft((d) => ({ ...d, ...patch }));
+
+  // File picker → read as text → stash in inline_html.
+  const onFilePicked = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setStatus({ type: "err", msg: "File too big (max 2 MB). Inline mode is for single-file HTML apps." });
+      return;
+    }
+    const text = await file.text();
+    update({ inline_html: text });
+    setStatus({ type: "ok", msg: `Loaded ${file.name} (${Math.round(file.size / 1024)} KB). Click Save slot to publish.` });
+  };
 
   return (
     <div className="admin">
@@ -177,7 +209,7 @@ function AdminPanel({ session }) {
             {merged.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
-                {(s.deploy_url || s.bundle_path) ? "  •  LIVE" : ""}
+                {(s.deploy_url || s.inline_html || s.bundle_path) ? "  •  LIVE" : ""}
               </option>
             ))}
           </select>
@@ -217,18 +249,79 @@ function AdminPanel({ session }) {
             </div>
 
             <div className="row">
-              <label className="label">Deployed app URL (v1)</label>
-              <input
-                className="input"
-                placeholder="https://my-study-app.vercel.app"
-                value={draft.deploy_url || ""}
-                onChange={(e) => update({ deploy_url: e.target.value })}
-              />
-              <p className="note">
-                Paste the URL of any deployed app. It loads in a sandboxed iframe when users enter this subject.
-                Bundle uploads will arrive in a future version.
-              </p>
+              <label className="label">Deploy source</label>
+              <div className="mode-tabs" role="tablist">
+                <button
+                  role="tab"
+                  aria-selected={mode === "url"}
+                  className={`chip ${mode === "url" ? "active" : ""}`}
+                  onClick={() => setMode("url")}
+                  type="button"
+                >
+                  🌐 Hosted URL
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={mode === "inline"}
+                  className={`chip ${mode === "inline" ? "active" : ""}`}
+                  onClick={() => setMode("inline")}
+                  type="button"
+                >
+                  📝 Paste / upload HTML
+                </button>
+              </div>
             </div>
+
+            {mode === "url" && (
+              <div className="row">
+                <label className="label">Deployed app URL</label>
+                <input
+                  className="input"
+                  placeholder="https://my-study-app.vercel.app"
+                  value={draft.deploy_url || ""}
+                  onChange={(e) => update({ deploy_url: e.target.value })}
+                />
+                <p className="note">
+                  Paste the URL of an app you've hosted elsewhere (Vercel, Netlify, GitHub Pages, etc).
+                  It loads in a sandboxed iframe when users enter this subject.
+                </p>
+              </div>
+            )}
+
+            {mode === "inline" && (
+              <>
+                <div className="row">
+                  <label className="label">Upload an .html file</label>
+                  <input
+                    type="file"
+                    accept=".html,text/html"
+                    className="input"
+                    onChange={onFilePicked}
+                  />
+                  <p className="note">
+                    Pick a single-file HTML app (max 2 MB). Contents get pasted into the editor below — you can tweak before saving.
+                  </p>
+                </div>
+
+                <div className="row">
+                  <label className="label">Paste HTML (or edit what you uploaded)</label>
+                  <textarea
+                    className="textarea"
+                    style={{ minHeight: 220, fontFamily: "SFMono-Regular, Consolas, monospace", fontSize: 12.5 }}
+                    placeholder={`<!doctype html>\n<html>\n  <head><title>My study app</title></head>\n  <body>\n    <h1>Hello from inside the hub</h1>\n    <script>/* your code */</script>\n  </body>\n</html>`}
+                    value={draft.inline_html || ""}
+                    onChange={(e) => update({ inline_html: e.target.value })}
+                  />
+                  <p className="note">
+                    Works for single-file HTML apps: inline &lt;style&gt;, inline &lt;script&gt;, and data-URI images.
+                    External relative paths (src="./app.js") won't resolve — bundle those into the file or use Hosted URL mode.
+                    {draft.inline_html && (
+                      <> <strong>Size:</strong> {(new Blob([draft.inline_html]).size / 1024).toFixed(1)} KB.</>
+                    )}
+                  </p>
+                </div>
+              </>
+            )}
 
             <div className="actions">
               <button className="btn primary" onClick={save} disabled={busy}>

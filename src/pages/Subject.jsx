@@ -39,7 +39,9 @@ export default function Subject() {
     );
   }
 
-  const deployedSrc = subject?.deploy_url || null; // bundle_path support comes in v1.1
+  const deployedSrc = subject?.deploy_url || null;
+  const inlineHtml = subject?.inline_html || null;
+  const hasDeployment = Boolean(deployedSrc || inlineHtml);
 
   return (
     <div className="subject-shell">
@@ -48,10 +50,10 @@ export default function Subject() {
           <Link to="/" className="btn" aria-label="Back to hub">←</Link>
           <span className="icon" aria-hidden>{subject?.icon || "🎓"}</span>
           <span className="name">{subject?.name}</span>
-          {deployedSrc && <span className="tag">Live</span>}
+          {hasDeployment && <span className="tag">Live</span>}
         </div>
         <div style={{ display: "flex", gap: 8 }}>
-          {deployedSrc && (
+          {deployedSrc && !inlineHtml && (
             <a href={deployedSrc} target="_blank" rel="noreferrer" className="btn">
               Open in new tab ↗
             </a>
@@ -60,13 +62,17 @@ export default function Subject() {
         </div>
       </div>
       <div className="subject-frame-wrap">
-        {loading && !deployedSrc ? (
+        {loading && !hasDeployment ? (
           <div className="empty-slot">
             <div className="glyph">⏳</div>
             <p>Loading slot…</p>
           </div>
-        ) : deployedSrc ? (
-          <SubjectFrame src={deployedSrc} title={subject.name} />
+        ) : hasDeployment ? (
+          <SubjectFrame
+            src={inlineHtml ? undefined : deployedSrc}
+            srcDoc={inlineHtml || undefined}
+            title={subject.name}
+          />
         ) : (
           <EmptySlot subject={subject} />
         )}
