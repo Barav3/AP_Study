@@ -1,22 +1,28 @@
 import { Link } from "react-router-dom";
 
-export default function SubjectTile({ subject, deployed, activityCount = 0 }) {
-  const style = { "--tile-color": subject.color };
-  const badge =
-    activityCount > 0
-      ? `${activityCount} app${activityCount === 1 ? "" : "s"}`
-      : deployed
-        ? "LIVE"
-        : "EMPTY";
+export default function SubjectTile({ subject, deployed, activityCount = 0, index = 0 }) {
+  const isLive = activityCount > 0 || deployed;
+  const statusLabel = activityCount > 0
+    ? `${activityCount} app${activityCount === 1 ? "" : "s"}`
+    : isLive ? "live" : "empty";
+
   return (
-    <Link to={`/s/${subject.id}`} className="tile" style={style} aria-label={`Enter ${subject.name}`}>
-      <span className={`tile-badge ${activityCount > 0 || deployed ? "live" : "empty"}`}>
-        {badge}
-      </span>
-      <div className="tile-icon" aria-hidden>{subject.icon}</div>
+    <Link
+      to={`/s/${subject.id}`}
+      className={`tile ${isLive ? "live" : "empty"}`}
+      style={{ "--tile-index": index }}
+      aria-label={`Open ${subject.name}`}
+    >
+      <div className="tile-top">
+        <span className="tile-icon" aria-hidden>{subject.icon}</span>
+        <span className={`tile-status ${isLive ? "live-status" : ""}`}>
+          <span className="status-dot" />
+          {statusLabel}
+        </span>
+      </div>
       <div>
-        <h3 className="tile-title">{subject.short}</h3>
-        <div className="tile-sub">{subject.category}</div>
+        <p className="tile-title">{subject.name}</p>
+        <div className="tile-category">{subject.category}</div>
       </div>
     </Link>
   );

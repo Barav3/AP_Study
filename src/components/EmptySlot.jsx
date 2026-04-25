@@ -6,13 +6,13 @@ export default function EmptySlot({ subject }) {
       <div className="glyph" aria-hidden>{subject.icon}</div>
       <h2>{subject.name}</h2>
       <p>
-        No study app is deployed to this slot yet. Head to the admin panel to paste a
-        URL or upload a bundle — then this world will light up.
+        No study app deployed to this slot yet. Paste a URL or upload a
+        single-file HTML app to bring it to life.
       </p>
-      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: "center" }}>
-        <Link to="/" className="btn">← Back to hub</Link>
-        <Link to="/guide" className="btn">How does this work?</Link>
-        <Link to="/admin" className="btn primary">Deploy an app</Link>
+      <div className="empty-actions">
+        <Link to="/" className="btn">← hub</Link>
+        <Link to="/guide" className="btn">how it works</Link>
+        <Link to="/admin" className="btn primary">deploy →</Link>
       </div>
     </div>
   );

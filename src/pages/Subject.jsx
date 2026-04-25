@@ -11,18 +11,17 @@ import EmptySlot from "../components/EmptySlot.jsx";
 export default function Subject() {
   const { subjectId, activityId } = useParams();
   const fallback = findSubject(subjectId);
-  const [subject, setSubject] = useState(fallback);
-  const [activities, setActivities] = useState([]);
+  const [subject, setSubject]               = useState(fallback);
+  const [activities, setActivities]         = useState([]);
   const [currentActivity, setCurrentActivity] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState(null);
+  const [loading, setLoading]               = useState(true);
+  const [err, setErr]                       = useState(null);
 
   useEffect(() => {
     let alive = true;
     setLoading(true);
     setErr(null);
 
-    // Always fetch the subject meta + the list of activities in it.
     Promise.all([
       fetchSubject(subjectId).catch(() => null),
       fetchActivities(subjectId).catch((e) => { setErr(e.message); return []; }),
@@ -35,14 +34,12 @@ export default function Subject() {
     return () => { alive = false; };
   }, [subjectId, fallback]);
 
-  // If launching a specific activity, look it up in the list we already have.
   useEffect(() => {
     if (!activityId) { setCurrentActivity(null); return; }
     const match = activities.find((a) => a.id === activityId);
     if (match) {
       setCurrentActivity(match);
     } else {
-      // Fallback: direct lookup (list may not have loaded yet)
       fetchActivity(subjectId, activityId).then((a) => setCurrentActivity(a)).catch(() => {});
     }
   }, [activityId, subjectId, activities]);
@@ -51,44 +48,49 @@ export default function Subject() {
     return (
       <div className="center-screen">
         <h1>Unknown subject</h1>
-        <Link to="/" className="btn">Back to hub</Link>
+        <Link to="/" className="btn">← hub</Link>
       </div>
     );
   }
 
-  // ---- Activity embed mode ----
+  // ── Activity embed mode ──────────────────────────────────
   if (activityId) {
     if (loading && !currentActivity) {
-      return <div className="center-screen"><p>Loading activity…</p></div>;
+      return <div className="center-screen"><p style={{ color: "var(--text-2)" }}>Loading…</p></div>;
     }
     if (!currentActivity) {
       return (
         <div className="center-screen">
           <h1>Activity not found</h1>
-          <Link to={`/s/${subjectId}`} className="btn">← Back to {subject?.name}</Link>
+          <Link to={`/s/${subjectId}`} className="btn">← {subject?.name}</Link>
         </div>
       );
     }
     return (
       <div className="subject-shell">
         <div className="subject-topbar">
-          <div className="crumb">
-            <Link to={`/s/${subjectId}`} className="btn" aria-label="Back to subject">←</Link>
-            <span className="icon" aria-hidden>{currentActivity.icon || subject?.icon || "🎓"}</span>
-            <span className="name">
-              <Link to={`/s/${subjectId}`} style={{ color: "inherit" }}>{subject?.name}</Link>
-              {" · "}
-              {currentActivity.name}
+          <div className="topbar-crumb">
+            <Link to={`/s/${subjectId}`} className="btn sm" aria-label="Back to subject">←</Link>
+            <span className="topbar-icon" aria-hidden>{currentActivity.icon || subject?.icon || "🎓"}</span>
+            <span className="topbar-path">
+              <Link to={`/s/${subjectId}`} style={{ color: "var(--text-2)" }}>
+                {subject?.short || subject?.name}
+              </Link>
+              {" / "}
+              <strong>{currentActivity.name}</strong>
             </span>
-            <span className="tag">Live</span>
+            <span className="topbar-live">
+              <span className="topbar-live-dot" />
+              live
+            </span>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            {currentActivity.deploy_url && currentActivity.deploy_mode === "url" && (
-              <a href={currentActivity.deploy_url} target="_blank" rel="noreferrer" className="btn">
-                Open in new tab ↗
+          <div className="topbar-actions">
+            {currentActivity.deploy_mode === "url" && currentActivity.deploy_url && (
+              <a href={currentActivity.deploy_url} target="_blank" rel="noreferrer" className="btn sm">
+                ↗ new tab
               </a>
             )}
-            <Link to="/admin" className="btn">Admin</Link>
+            <Link to="/admin" className="btn sm">admin</Link>
           </div>
         </div>
         <div className="subject-frame-wrap">
@@ -102,26 +104,24 @@ export default function Subject() {
     );
   }
 
-  // ---- Subject-folder mode (list of activities) ----
+  // ── Subject-folder mode ──────────────────────────────────
   return (
     <div className="subject-folder">
       <header className="subject-folder-header">
-        <div className="crumb">
+        <div className="folder-crumb">
           <Link to="/" className="btn" aria-label="Back to hub">←</Link>
-          <span className="icon-large" aria-hidden style={{ background: `linear-gradient(135deg, ${subject?.color} 0%, color-mix(in srgb, ${subject?.color} 60%, #000) 100%)` }}>
-            {subject?.icon}
-          </span>
-          <div>
-            <h1 style={{ margin: 0 }}>{subject?.name}</h1>
+          <span className="folder-icon" aria-hidden>{subject?.icon}</span>
+          <div className="folder-meta">
+            <h1>{subject?.name}</h1>
             {subject?.description && <p className="note">{subject.description}</p>}
           </div>
         </div>
-        <Link to="/admin" className="btn">Admin</Link>
+        <Link to="/admin" className="btn">admin</Link>
       </header>
 
       {err && (
-        <div className="card" style={{ padding: 12, marginBottom: 16, fontSize: 13, color: "#f4bcbc", background: "#2a1d1d", border: "1px solid #4a3333" }}>
-          Couldn't load activities ({err}). Database might not be configured yet.
+        <div className="err-banner" style={{ marginBottom: 20 }}>
+          Couldn't load activities — DB might not be configured yet.
         </div>
       )}
 
@@ -136,7 +136,6 @@ export default function Subject() {
               key={a.id}
               to={`/s/${subjectId}/a/${a.id}`}
               className="activity-tile"
-              style={{ "--tile-color": subject?.color || "#4a9b7e" }}
             >
               <span className="activity-icon" aria-hidden>{a.icon || "🎯"}</span>
               <div>

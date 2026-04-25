@@ -4,10 +4,6 @@ import { AP_SUBJECTS, CATEGORIES, isActiveSubjectId } from "../lib/subjects.js";
 import { fetchSubjects, fetchActivityCounts } from "../lib/supabase.js";
 import SubjectTile from "../components/SubjectTile.jsx";
 
-// Merges the hardcoded canonical AP list with Supabase data. **Local is the
-// gate** — a remote row is only merged in if its subject is uncommented in
-// src/lib/subjects.js. That way commented-out subjects stay hidden even if
-// they were previously seeded into Supabase.
 function mergeSubjects(local, remote) {
   const byId = new Map(local.map((s) => [s.id, { ...s }]));
   for (const r of remote) {
@@ -19,11 +15,11 @@ function mergeSubjects(local, remote) {
 }
 
 export default function Home() {
-  const [remote, setRemote] = useState([]);
+  const [remote, setRemote]             = useState([]);
   const [activityCounts, setActivityCounts] = useState({});
-  const [category, setCategory] = useState("All");
-  const [query, setQuery] = useState("");
-  const [err, setErr] = useState(null);
+  const [category, setCategory]         = useState("All");
+  const [query, setQuery]               = useState("");
+  const [err, setErr]                   = useState(null);
 
   useEffect(() => {
     fetchSubjects()
@@ -31,7 +27,7 @@ export default function Home() {
       .catch((e) => setErr(e.message || String(e)));
     fetchActivityCounts()
       .then(setActivityCounts)
-      .catch(() => {}); // non-fatal; tiles just won't show counts
+      .catch(() => {});
   }, []);
 
   const subjects = useMemo(() => mergeSubjects(AP_SUBJECTS, remote), [remote]);
@@ -50,20 +46,30 @@ export default function Home() {
   return (
     <div className="home">
       <header className="home-header">
-        <div>
+        <div className="home-wordmark">
           <h1>IJsMadeSomeBullshit</h1>
-          <p>Pick a world. Study anywhere. {liveCount} live {liveCount === 1 ? "slot" : "slots"}.</p>
+          <span className="tagline">select a subject · open a world</span>
+          {liveCount > 0 && (
+            <span className="live-pill">
+              <span className="dot" />
+              {liveCount} live {liveCount === 1 ? "slot" : "slots"}
+            </span>
+          )}
         </div>
-        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input
-            className="input"
-            style={{ width: 220 }}
-            placeholder="Search subjects…"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          <Link to="/guide" className="btn">Guide</Link>
-          <Link to="/admin" className="btn">Admin</Link>
+
+        <div className="home-controls">
+          <div className="search-wrap">
+            <span className="search-icon" aria-hidden>⌕</span>
+            <input
+              className="input"
+              placeholder="search subjects…"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              aria-label="Search subjects"
+            />
+          </div>
+          <Link to="/guide" className="btn">guide</Link>
+          <Link to="/admin" className="btn">admin</Link>
         </div>
       </header>
 
@@ -82,22 +88,20 @@ export default function Home() {
       </div>
 
       {err && (
-        <div className="card" style={{
-          padding: 12, borderRadius: 12, border: "1px solid #4a3333",
-          background: "#2a1d1d", color: "#f4bcbc", marginBottom: 16, fontSize: 13,
-        }}>
-          Couldn't reach Supabase ({err}). Showing local subject list — tiles will still
-          open but slots won't have deployed apps until the DB is connected.
+        <div className="err-banner">
+          Couldn't reach Supabase — showing local list. Slots will open but
+          won't have deployed apps until the DB is connected.
         </div>
       )}
 
       <div className="grid">
-        {filtered.map((s) => (
+        {filtered.map((s, i) => (
           <SubjectTile
             key={s.id}
             subject={s}
             activityCount={activityCounts[s.id] || 0}
             deployed={(activityCounts[s.id] || 0) > 0}
+            index={i}
           />
         ))}
       </div>
