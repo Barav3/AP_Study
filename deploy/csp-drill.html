@@ -1,0 +1,1226 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AP CSP Drill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #121212; --bg-2: #161616; --surface: #1a1a1a; --surface-2: #232323;
+    --border: rgba(255,255,255,0.06); --border-2: rgba(255,255,255,0.10); --border-3: rgba(255,255,255,0.16);
+    --text: rgba(255,255,255,0.87); --text-2: rgba(255,255,255,0.60); --text-3: rgba(255,255,255,0.38);
+    --csp: #3a87ab; --csp-dim: rgba(58,135,171,0.12); --csp-soft: rgba(58,135,171,0.22);
+    --ok: #7fb89a; --ok-dim: rgba(127,184,154,0.14);
+    --bad: #d4807e; --bad-dim: rgba(212,128,126,0.14);
+    --radius: 8px; --radius-lg: 14px;
+    --font-display: 'Instrument Serif', Georgia, serif;
+    --font-sans: 'Sora', system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 15px; line-height: 1.55; letter-spacing: -0.005em; -webkit-font-smoothing: antialiased; }
+  body { background: radial-gradient(ellipse at 30% -10%, var(--csp-dim) 0%, transparent 55%), var(--bg); min-height: 100vh; }
+  .app { max-width: 760px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  .hd { display: flex; justify-content: space-between; align-items: flex-end; gap: 18px; margin-bottom: 36px; flex-wrap: wrap; }
+  .hd-title h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(32px,5vw,44px); line-height: 1; letter-spacing: -0.01em; }
+  .hd-title .sub { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--text-3); margin-top: 6px; }
+  .hd-stats { display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--text-2); flex-wrap: wrap; }
+  .stat { padding: 6px 10px; border: 1px solid var(--border-2); border-radius: var(--radius); font-variant-numeric: tabular-nums; }
+  .stat strong { color: var(--text); font-weight: 500; }
+
+  .pg { height: 2px; background: var(--border); border-radius: 999px; margin-bottom: 32px; overflow: hidden; }
+  .pg-bar { height: 100%; background: var(--csp); transition: width 0.3s ease; }
+
+  /* QOTD */
+  .qotd { background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 28px; cursor: pointer; transition: border-color .15s; }
+  .qotd:hover { border-color: var(--csp-soft); }
+  .qotd-label { font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--csp); margin-bottom: 8px; }
+  .qotd-q { font-size: 14px; color: var(--text); line-height: 1.5; }
+  .qotd-hint { font-size: 11px; color: var(--text-3); margin-top: 6px; }
+
+  /* Modes */
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  .mode-tile { padding: 22px 20px; background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-lg); cursor: pointer; text-align: left; color: var(--text); font: 500 14.5px var(--font-sans); transition: border-color .15s, background .15s, transform .15s; }
+  .mode-tile:hover { border-color: var(--csp-soft); background: var(--surface-2); transform: translateY(-1px); }
+  .mode-tile .mode-h { font-size: 16px; margin-bottom: 6px; }
+  .mode-tile .mode-s { font-size: 12px; color: var(--text-2); line-height: 1.5; font-weight: 400; }
+  .mode-tile .mode-tag { display: inline-block; margin-top: 8px; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--csp); }
+  .full-width { grid-column: 1 / -1; }
+
+  /* BI picker */
+  .bi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  .bi-tile { padding: 18px 20px; background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-lg); cursor: pointer; text-align: left; color: var(--text); font: 500 13px var(--font-sans); transition: border-color .15s, background .15s, transform .15s; }
+  .bi-tile:hover { background: var(--surface-2); transform: translateY(-1px); }
+  .bi-tile .bi-num { font-family: var(--font-display); font-size: 22px; font-weight: 400; line-height: 1; margin-bottom: 6px; }
+  .bi-tile .bi-name { font-size: 13px; color: var(--text); margin-bottom: 4px; }
+  .bi-tile .bi-meta { font-size: 11px; color: var(--text-3); }
+
+  /* Card / quiz */
+  .card { background: radial-gradient(ellipse at 50% -30%, var(--csp-dim) 0%, transparent 60%), var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-lg); padding: 28px 28px 24px; animation: fade .3s ease both; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .qmeta { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; font-size: 10.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-3); flex-wrap: wrap; }
+  .tag { color: var(--csp); border: 1px solid var(--csp-soft); padding: 3px 8px; border-radius: 999px; }
+  .topic-tag { color: var(--text-3); border: 1px solid var(--border-2); padding: 3px 8px; border-radius: 999px; }
+  .qtext { font-size: 17px; line-height: 1.55; color: var(--text); margin-bottom: 22px; }
+  .qtext pre { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 13px; background: var(--bg-2); border: 1px solid var(--border); padding: 12px 14px; border-radius: var(--radius); margin: 12px 0; overflow-x: auto; white-space: pre; }
+
+  .opts { display: flex; flex-direction: column; gap: 8px; }
+  .opt { display: flex; align-items: flex-start; gap: 12px; padding: 13px 16px; background: var(--bg-2); border: 1px solid var(--border-2); border-radius: var(--radius); color: var(--text); text-align: left; font: 400 14.5px var(--font-sans); letter-spacing: -0.005em; cursor: pointer; transition: border-color .15s, background .15s; }
+  .opt:hover:not(:disabled) { border-color: var(--border-3); background: var(--surface); }
+  .opt:disabled { cursor: default; }
+  .opt-letter { color: var(--text-3); font-weight: 500; font-size: 12.5px; min-width: 14px; padding-top: 1px; letter-spacing: 0.05em; }
+  .opt.correct { border-color: var(--ok); background: var(--ok-dim); }
+  .opt.correct .opt-letter { color: var(--ok); }
+  .opt.wrong { border-color: var(--bad); background: var(--bad-dim); }
+  .opt.wrong .opt-letter { color: var(--bad); }
+  .opt.dim { opacity: 0.45; }
+
+  .fb { margin-top: 18px; padding: 14px 16px; border-radius: var(--radius); border: 1px solid var(--border-2); background: var(--bg-2); font-size: 13.5px; line-height: 1.6; color: var(--text-2); animation: fade .25s ease both; }
+  .fb strong { color: var(--text); font-weight: 500; }
+  .fb.ok { border-color: var(--ok); background: var(--ok-dim); color: var(--text); }
+  .fb.no { border-color: var(--bad); background: var(--bad-dim); color: var(--text); }
+
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; gap: 10px; flex-wrap: wrap; }
+  .actions .left { color: var(--text-3); font-size: 12px; }
+  .actions .right { display: flex; gap: 8px; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; border-radius: var(--radius); background: transparent; color: var(--text); border: 1px solid var(--border-2); cursor: pointer; font: 500 13px var(--font-sans); letter-spacing: -0.005em; transition: background .15s, border-color .15s; }
+  .btn:hover { background: var(--surface); border-color: var(--border-3); }
+  .btn.primary { background: var(--text); color: #0a0a0a; border-color: transparent; }
+  .btn.primary:hover { background: #fff; }
+  .btn.csp { background: var(--csp); color: #fff; border-color: transparent; }
+  .btn.csp:hover { filter: brightness(1.08); }
+
+  /* Done */
+  .done { text-align: center; padding: 48px 24px; animation: fade .4s ease both; }
+  .done h2 { font-family: var(--font-display); font-weight: 400; font-size: 48px; line-height: 1; margin-bottom: 12px; }
+  .done .pct { color: var(--csp); }
+  .done .verdict { font-size: 14px; color: var(--text-2); margin-bottom: 24px; }
+  .done .score-est { display: inline-block; margin: 0 auto 20px; padding: 8px 16px; border: 1px solid var(--csp-soft); border-radius: var(--radius); font-size: 13px; color: var(--csp); }
+  .bi-breakdown { display: grid; grid-template-columns: repeat(5,1fr); gap: 8px; margin: 24px auto; max-width: 520px; }
+  .bi-chip { padding: 10px 8px; background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius); font-size: 11px; text-align: center; }
+  .bi-chip .bc-num { font-size: 17px; font-weight: 500; color: var(--text); }
+  .bi-chip .bc-label { color: var(--text-3); margin-top: 2px; }
+  .reviews { text-align: left; max-width: 600px; margin: 24px auto 0; }
+  .review { padding: 14px 16px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; font-size: 13px; }
+  .review .rq { color: var(--text-2); font-weight: 500; }
+  .review .rans { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+
+  /* Cheat sheet */
+  .cheat { animation: fade .3s ease both; }
+  .cheat h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--csp); margin: 22px 0 10px; }
+  .cheat h3:first-child { margin-top: 0; }
+  .cheat ul { padding-left: 20px; line-height: 1.75; font-size: 13.5px; color: var(--text); }
+  .cheat li { margin-bottom: 4px; }
+  .cheat code { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12.5px; background: var(--bg-2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; }
+  .cheat table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 10px 0; }
+  .cheat th, .cheat td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  .cheat th { color: var(--csp); font-weight: 500; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.12em; }
+
+  /* Written response */
+  .wr { animation: fade .3s ease both; }
+  .wr-section { background: var(--surface); border: 1px solid var(--border-2); border-radius: var(--radius-lg); padding: 20px 22px; margin-bottom: 14px; }
+  .wr-section h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--csp); margin-bottom: 10px; }
+  .wr-section p { font-size: 13.5px; color: var(--text-2); line-height: 1.65; margin-bottom: 8px; }
+  .wr-section p:last-child { margin-bottom: 0; }
+  .wr-section ul { padding-left: 20px; font-size: 13.5px; color: var(--text-2); line-height: 1.75; }
+  .wr-section li { margin-bottom: 3px; }
+  .wr-section code { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; background: var(--bg-2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; color: var(--text); }
+  .wr-row { display: flex; gap: 12px; margin-bottom: 10px; padding: 12px 14px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); }
+  .wr-row .wr-pt { font-size: 20px; font-weight: 600; color: var(--csp); min-width: 28px; }
+  .wr-row .wr-body { font-size: 13px; color: var(--text-2); line-height: 1.55; }
+  .wr-row .wr-body strong { color: var(--text); font-weight: 500; }
+
+  kbd { display: inline-block; padding: 1px 6px; background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 4px; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 11px; color: var(--text-2); line-height: 1.4; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 22px 0; }
+  .section-label { font-size: 10px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-3); margin-bottom: 12px; margin-top: 28px; }
+  .section-label:first-child { margin-top: 0; }
+
+  @media (max-width: 560px) {
+    .app { padding: 32px 16px 64px; }
+    .modes, .bi-grid { grid-template-columns: 1fr; }
+    .bi-breakdown { grid-template-columns: repeat(3,1fr); }
+    .card { padding: 20px 18px 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+// ─── Big Idea metadata ───────────────────────────────────────
+const BIG_IDEAS = [
+  { id: "BI 1", label: "Creative Development",           weight: "10–13%", n: 8  },
+  { id: "BI 2", label: "Data",                           weight: "17–22%", n: 14 },
+  { id: "BI 3", label: "Algorithms & Programming",       weight: "30–35%", n: 23 },
+  { id: "BI 4", label: "Computer Systems & Networks",    weight: "11–15%", n: 10 },
+  { id: "BI 5", label: "Impact of Computing",            weight: "21–26%", n: 15 },
+];
+
+// ─── 70-Question Bank ────────────────────────────────────────
+const QUESTIONS = [
+  // ── BI 1 — Creative Development (8) ──────────────────────
+  {
+    bi:"BI 1", topic:"Program Purpose",
+    q:"A program runs without crashing but consistently classifies all incoming emails as spam. This is most likely a:",
+    opts:["Syntax error","Runtime error","Logic error","Overflow error"],
+    correct:2,
+    fb:"Runs without crashing but produces wrong output = LOGIC error. Syntax errors prevent running; runtime errors crash mid-execution."
+  },
+  {
+    bi:"BI 1", topic:"Creative Choices",
+    q:"Which is the BEST example of a 'creative' choice when developing a study app?",
+    opts:["Choosing variable names like score and count","Deciding the app should serve high school students preparing for AP exams","Following the language's required syntax for assignment","Using ASCII rather than Unicode for English text"],
+    correct:1,
+    fb:"Creative choices = purpose, audience, what the program should do. A, C, D are mechanical/required, not creative."
+  },
+  {
+    bi:"BI 1", topic:"Attribution",
+    q:"Which is true about attribution when reusing code from an open-source project?",
+    opts:["Open-source means no attribution required","Attribution is required only if you copy code verbatim","Attribution is required when reusing code, even if you modify it, per the project's license","Attribution is needed only for code longer than 100 lines"],
+    correct:2,
+    fb:"Open-source ≠ no rules. Most licenses require attribution even for modified work. Some add share-alike, noncommercial, etc."
+  },
+  {
+    bi:"BI 1", topic:"Program Design",
+    q:"A team is designing a program to recommend study materials. Which activity is most appropriate at the DESIGN stage?",
+    opts:["Writing unit tests","Identifying user needs and what the program should do","Fixing runtime errors","Optimizing database queries"],
+    correct:1,
+    fb:"Design = figuring out purpose and user needs. Writing tests and fixing bugs come AFTER design; query optimization is implementation-level."
+  },
+  {
+    bi:"BI 1", topic:"Iterative Development",
+    q:"Which BEST describes iterative development?",
+    opts:["Writing the entire program before testing anything","Planning, building, testing, and refining in repeated cycles","Testing only at the end when the program is complete","Dividing the program among team members once and merging at the end"],
+    correct:1,
+    fb:"Iterative = repeated cycles of plan → build → test → refine. Each cycle improves the product based on feedback from the previous one."
+  },
+  {
+    bi:"BI 1", topic:"Abstraction",
+    q:"A programmer uses a library function to generate maps without understanding how it works internally. This illustrates:",
+    opts:["A syntax error","Computational thinking","Abstraction — using the function as a black box","A logic error"],
+    correct:2,
+    fb:"Abstraction = hiding implementation details and exposing only what's needed. Using a library without knowing its internals is classic procedural abstraction."
+  },
+  {
+    bi:"BI 1", topic:"Unintended Use",
+    q:"Which of the following is an example of a program being used in a way NOT intended by its creators?",
+    opts:["A calculator app used to do arithmetic","A social media platform used to organize a large-scale protest","A word processor used to write a novel","A spreadsheet used to track a household budget"],
+    correct:1,
+    fb:"Computing enables uses never intended by creators. Social media organizing political movements is a classic unintended use case."
+  },
+  {
+    bi:"BI 1", topic:"Collaboration",
+    q:"Two students collaborate on a program: Student A writes data storage functions; Student B writes the user interface. They share code via a version control system. This is an example of:",
+    opts:["Functional decomposition and collaboration","Parallel processing","Lossy compression of development effort","Social engineering"],
+    correct:0,
+    fb:"Breaking a program into parts (decomposition) and dividing work (collaboration) are core software development practices. Version control enables asynchronous teamwork."
+  },
+
+  // ── BI 2 — Data (14) ─────────────────────────────────────
+  {
+    bi:"BI 2", topic:"Binary / Bits",
+    q:"How many distinct values can 6 bits represent?",
+    opts:["6","12","36","64"],
+    correct:3,
+    fb:"2^6 = 64 distinct patterns. Max unsigned value = 2^6 − 1 = 63 (values run 0 to 63)."
+  },
+  {
+    bi:"BI 2", topic:"Binary Conversion",
+    q:"Convert binary 1011 to decimal.",
+    opts:["9","10","11","13"],
+    correct:2,
+    fb:"1011 = 8 + 0 + 2 + 1 = 11. Powers of 2 from right: 1, 2, 4, 8."
+  },
+  {
+    bi:"BI 2", topic:"Data Representation",
+    q:"A digital photograph is 1024 px wide × 768 px tall, with 24-bit color. What is the uncompressed file size in BYTES?",
+    opts:["786,432","2,359,296","18,874,368","25,165,824"],
+    correct:1,
+    fb:"Bits = 1024 × 768 × 24 = 18,874,368. Divide by 8 for bytes = 2,359,296. Answer C is the bits value — classic units trap."
+  },
+  {
+    bi:"BI 2", topic:"Compression",
+    q:"Which is a feature of LOSSY compression but NOT lossless?",
+    opts:["Reduces file size","Some original information is permanently discarded","The compressed file is usually a different format","Works on text files"],
+    correct:1,
+    fb:"Lossless preserves every bit; lossy permanently discards info. Both reduce file size. The loss happens at compress time, not each time you open the file."
+  },
+  {
+    bi:"BI 2", topic:"Data Analysis",
+    q:"A study finds people who own umbrellas are more likely to experience rain. The most accurate conclusion is:",
+    opts:["Umbrellas cause rain","Rain causes umbrella ownership","Correlation does not establish causation; a third factor likely influences both","The data is statistically biased toward urban areas"],
+    correct:2,
+    fb:"Classic correlation vs. causation. A third variable (weather forecasts) likely drives both. Always look for hidden factors before claiming causation."
+  },
+  {
+    bi:"BI 2", topic:"Algorithm Bug",
+    q:"Why is the list [2, 1, 4, 9, 6] problematic for finding the minimum with this code?\n\nsmallest ← 0\nFOR EACH n IN list {\n  IF n < smallest { smallest ← n }\n}",
+    opts:["The loop runs too many times","The list is unsorted so it won't work","smallest is initialized to 0, but no list element is less than 0, so it returns 0","MOD is not used"],
+    correct:2,
+    fb:"Classic 'initialize to 0' bug. No element is < 0 so smallest never updates. Always initialize min to list[1] to handle all value ranges including negatives."
+  },
+  {
+    bi:"BI 2", topic:"Binary Conversion",
+    q:"Which binary number equals decimal 25?",
+    opts:["11000","11001","10110","11010"],
+    correct:1,
+    fb:"25 = 16 + 8 + 1 = 11001. Check: 16+8+0+0+1 = 25 ✓"
+  },
+  {
+    bi:"BI 2", topic:"Data Representation",
+    q:"A color is represented using 8 bits per channel (red, green, blue). How many unique colors can be represented?",
+    opts:["256","512","16,777,216","4,294,967,296"],
+    correct:2,
+    fb:"8 bits per channel = 256 values per channel. Three channels: 256³ = 16,777,216. This is standard 24-bit (\"true\") color."
+  },
+  {
+    bi:"BI 2", topic:"Compression",
+    q:"Run-length encoding represents [5,5,5,5,5,3,3,2] as [(5,5),(2,3),(1,2)]. What does the pair (2,3) mean?",
+    opts:["The value 2 appears 3 times","The value 3 appears 2 times","Position 2 has value 3","3 values are encoded starting at position 2"],
+    correct:1,
+    fb:"RLE format is (count, value). (2,3) = the value 3 appears 2 consecutive times."
+  },
+  {
+    bi:"BI 2", topic:"Data Analysis",
+    q:"A school analyzes graduation rates and SAT scores across districts and finds a strong positive correlation. The BEST conclusion is:",
+    opts:["Higher SAT scores cause higher graduation rates","Higher graduation rates cause higher SAT scores","Districts with higher SAT scores tend to have higher graduation rates","The data is biased and should be discarded"],
+    correct:2,
+    fb:"Correlation = variables move together. It does NOT tell us which causes which, or whether a third variable (funding, socioeconomics) drives both."
+  },
+  {
+    bi:"BI 2", topic:"Metadata",
+    q:"Which of the following is METADATA, not data?",
+    opts:["The text of a photo caption","The photo file itself","The GPS coordinates and timestamp embedded in a photo file","The person's name shown in the photo"],
+    correct:2,
+    fb:"Metadata = data ABOUT data. GPS + timestamp describe the photo (where/when taken) but are not the photo's content itself."
+  },
+  {
+    bi:"BI 2", topic:"Privacy",
+    q:"A researcher combines three anonymized datasets — location data, purchase history, and health records — from different sources. The PRIMARY privacy concern is:",
+    opts:["The datasets use different file formats","Cross-referencing can re-identify individuals even though each dataset alone is anonymous","The datasets were not compressed before transfer","Health records are stored in binary"],
+    correct:1,
+    fb:"The 'mosaic effect': each dataset seems harmless alone, but combining them dramatically increases re-identification risk. This is a core AP CSP privacy concept."
+  },
+  {
+    bi:"BI 2", topic:"Data Representation",
+    q:"An audio file is sampled at 44,100 Hz, 16-bit depth, 2 channels (stereo), for 3 minutes. Which expression gives the uncompressed size in bits?",
+    opts:["44,100 × 16 × 3","44,100 × 16 × 2 × 180","44,100 × 16 × 2 × 3","44,100 × 2 × 180"],
+    correct:1,
+    fb:"Bits = sampleRate × bitDepth × channels × seconds. 3 min = 180 sec → 44,100 × 16 × 2 × 180."
+  },
+  {
+    bi:"BI 2", topic:"Data Representation",
+    q:"What is the primary advantage of storing data digitally rather than in analog form?",
+    opts:["Digital signals are always more accurate than analog","Digital data can be perfectly copied and transmitted without degradation","Analog data cannot represent sound","Digital data uses less storage space per unit of information"],
+    correct:1,
+    fb:"Digital data (discrete bits) copies perfectly. Analog signals degrade each time they're copied — like a dubbed cassette tape losing quality each generation."
+  },
+
+  // ── BI 3 — Algorithms & Programming (23) ─────────────────
+  {
+    bi:"BI 3", topic:"Loops",
+    q:"What does the following code display?\n\nn ← 4\nREPEAT UNTIL (n > 10) {\n  n ← n + 3\n}\nDISPLAY(n)",
+    opts:["10","11","12","13"],
+    correct:3,
+    fb:"REPEAT UNTIL stops when the condition becomes TRUE. Trace: 4→7→10 (10>10 is FALSE, so loop continues) →13 (13>10 is TRUE, stop). Displays 13."
+  },
+  {
+    bi:"BI 3", topic:"Boolean Logic",
+    q:"Which expression is equivalent to NOT(age >= 18 AND hasParent)?",
+    opts:["age < 18 AND NOT hasParent","age < 18 OR NOT hasParent","age >= 18 OR hasParent","age <= 18 AND hasParent"],
+    correct:1,
+    fb:"De Morgan's Law: NOT(A AND B) = (NOT A) OR (NOT B). AND flips to OR. NOT(age>=18) = age<18."
+  },
+  {
+    bi:"BI 3", topic:"List Traversal",
+    q:"A list scores contains [8, 3, 12, 5, 1]. What does this procedure return?\n\nPROCEDURE mystery(list) {\n  best ← list[1]\n  FOR i ← 2 TO LENGTH(list) {\n    IF list[i] < best { best ← list[i] }\n  }\n  RETURN best\n}",
+    opts:["1","8","12","29"],
+    correct:0,
+    fb:"Min-finding. best starts at 8, then 3<8→3, 12<3? no, 5<3? no, 1<3→1. Returns 1."
+  },
+  {
+    bi:"BI 3", topic:"Undecidability",
+    q:"Which problem is undecidable?",
+    opts:["Find the largest number in a list","Determine if two strings are equal","Determine, for any program and input, whether the program will halt","Sort a list of 1 million numbers"],
+    correct:2,
+    fb:"The Halting Problem is THE classic undecidable problem — no algorithm exists that correctly solves it for all possible programs and inputs."
+  },
+  {
+    bi:"BI 3", topic:"Search",
+    q:"A list is unsorted. You need to find a specific value. Which is true?",
+    opts:["Binary search is faster but works only if you sort first","Binary search works on unsorted lists in O(log n)","Linear search is O(log n)","Sorting then binary-searching is always faster than linear search"],
+    correct:0,
+    fb:"Binary search requires sorted data. For a single lookup, sorting + binary often costs more than one linear pass. For many lookups on the same list, sort + binary wins."
+  },
+  {
+    bi:"BI 3", topic:"Loops",
+    q:"What value does count hold after this runs?\n\ncount ← 0\nlist ← [4, 7, 2, 9, 6, 3]\nFOR EACH n IN list {\n  IF n MOD 2 = 0 { count ← count + 1 }\n}",
+    opts:["2","3","4","6"],
+    correct:1,
+    fb:"Count even numbers: 4 ✓, 7 ✗, 2 ✓, 9 ✗, 6 ✓, 3 ✗ → count = 3."
+  },
+  {
+    bi:"BI 3", topic:"Functions",
+    q:"A procedure getName() DISPLAYs a name but does not RETURN it. Which is true?",
+    opts:["You can store its result in a variable","You cannot use its output as input to another procedure","DISPLAY and RETURN are interchangeable","The procedure will return the displayed name automatically"],
+    correct:1,
+    fb:"DISPLAY only outputs to the user. The result is not a value you can capture or pass forward. RETURN is what provides a usable value."
+  },
+  {
+    bi:"BI 3", topic:"Random",
+    q:"RANDOM(1, 6) is called 600 times. Approximately how many times will it return exactly 6?",
+    opts:["0 — RANDOM excludes endpoints","100","120","600"],
+    correct:1,
+    fb:"RANDOM(a, b) is INCLUSIVE of both endpoints. Each of the 6 values has ~1/6 probability. 600 × 1/6 ≈ 100. The 'excludes endpoints' trap is tested every year."
+  },
+  {
+    bi:"BI 3", topic:"Loops",
+    q:"What does this display?\n\ntotal ← 0\nFOR i ← 1 TO 5 {\n  IF i MOD 2 = 1 { total ← total + i }\n}\nDISPLAY(total)",
+    opts:["6","9","15","25"],
+    correct:1,
+    fb:"Sum odd i values from 1 to 5: i=1 (odd ✓), i=2 (even ✗), i=3 (odd ✓), i=4 (even ✗), i=5 (odd ✓). 1+3+5 = 9."
+  },
+  {
+    bi:"BI 3", topic:"Heuristics",
+    q:"A heuristic is best described as:",
+    opts:["An algorithm guaranteed to find the optimal solution","A method that always produces a correct yes/no answer","A 'good enough' approach used when an optimal solution is too slow","A type of decidable problem"],
+    correct:2,
+    fb:"A heuristic gives a practical, often-good solution without guaranteeing it's optimal. Used for hard problems like Traveling Salesman where exact solutions are too expensive."
+  },
+  {
+    bi:"BI 3", topic:"Recursion",
+    q:"What does mystery(6) return?\n\nPROCEDURE mystery(n) {\n  IF n = 1 { RETURN 1 }\n  RETURN n * mystery(n - 1)\n}",
+    opts:["6","21","720","36"],
+    correct:2,
+    fb:"This is factorial: 6! = 6×5×4×3×2×1 = 720. Trace the recursion: mystery(6) → 6×mystery(5) → 6×5×mystery(4) → ... → 720."
+  },
+  {
+    bi:"BI 3", topic:"Search",
+    q:"A program uses linear search on a list of 1,000,000 items. In the worst case, how many comparisons are made?",
+    opts:["1","20 (≈ log₂ 1,000,000)","500,000","1,000,000"],
+    correct:3,
+    fb:"Linear search worst case: target is last element or not present — must check ALL n items. 1,000,000 comparisons. Compare to binary search: log₂(1,000,000) ≈ 20."
+  },
+  {
+    bi:"BI 3", topic:"Decidability",
+    q:"Which of the following can ALWAYS be solved by an algorithm?",
+    opts:["Whether an arbitrary program will halt for a given input","Finding the minimum value in a finite list","Determining if two arbitrary programs produce identical output for all inputs","Whether an arbitrary program contains an infinite loop"],
+    correct:1,
+    fb:"Finding the min of a finite list is decidable — a simple linear scan always works in finite time. The others are variants of undecidable problems."
+  },
+  {
+    bi:"BI 3", topic:"Lists",
+    q:"What displays after this runs?\n\nresult ← \"\"\nlist ← [\"a\", \"b\", \"c\", \"d\"]\nFOR i ← 1 TO 4 {\n  IF i MOD 2 = 0 { result ← result + list[i] }\n}\nDISPLAY(result)",
+    opts:["ac","bd","abcd","b"],
+    correct:1,
+    fb:"Even indices: i=2 → list[2]='b', i=4 → list[4]='d'. Result = 'bd'. Remember: AP lists are 1-indexed."
+  },
+  {
+    bi:"BI 3", topic:"Efficiency",
+    q:"Which best describes a 'reasonable time' algorithm in AP CSP?",
+    opts:["Completes in under 1 second","Has polynomial time complexity (nᵏ for some constant k)","Has only O(1) or O(log n) complexity","Runs faster than O(n²)"],
+    correct:1,
+    fb:"Reasonable time = polynomial (nᵏ). Exponential time (2ⁿ) is unreasonable for large inputs — the problem grows so fast it's impractical to solve."
+  },
+  {
+    bi:"BI 3", topic:"Logic Errors",
+    q:"A procedure checks score > 90 to give an A, but the teacher wants 90 to also count as an A. The fix is:",
+    opts:["Change > to >=","Change > to <>","Add RETURN before the condition","Move the IF block inside a loop"],
+    correct:0,
+    fb:"score > 90 excludes exactly 90. score >= 90 includes it. Classic off-by-one boundary logic error."
+  },
+  {
+    bi:"BI 3", topic:"Functions",
+    q:"The procedure should return true if any item equals target. What is wrong?\n\nPROCEDURE hasTarget(list, target) {\n  FOR EACH item IN list {\n    IF item = target { RETURN true }\n    ELSE { RETURN false }\n  }\n}",
+    opts:["The FOR EACH loop iterates in the wrong order","RETURN false is inside the loop — it exits on the first non-match","RETURN true should be DISPLAY true","target should be initialized to 0"],
+    correct:1,
+    fb:"RETURN false inside the loop causes early exit after checking only the FIRST element. Fix: move RETURN false OUTSIDE the loop (after it finishes)."
+  },
+  {
+    bi:"BI 3", topic:"Loops",
+    q:"How many times does 'Hello' display?\n\nFOR i ← 1 TO 4 {\n  FOR j ← 1 TO 3 {\n    DISPLAY(\"Hello\")\n  }\n}",
+    opts:["7","12","24","4"],
+    correct:1,
+    fb:"Nested loops multiply: outer (4 iterations) × inner (3 iterations) = 12 total displays."
+  },
+  {
+    bi:"BI 3", topic:"Variables",
+    q:"Which is the correct AP pseudocode to swap the values of variables x and y?",
+    opts:["x ← y\ny ← x","temp ← x\nx ← y\ny ← temp","SWAP(x, y)","x ← x MOD y"],
+    correct:1,
+    fb:"Without temp, x ← y loses the original x value before y ← x can use it. A temp variable preserves x. SWAP() doesn't exist in AP pseudocode."
+  },
+  {
+    bi:"BI 3", topic:"Lists",
+    q:"A list stores [10, 20, 30, 40]. After APPEND(list, 50) then REMOVE(list, 2), what does the list contain?",
+    opts:["[10, 20, 30, 40, 50]","[10, 30, 40, 50]","[10, 20, 30, 50]","[20, 30, 40, 50]"],
+    correct:1,
+    fb:"APPEND adds 50 → [10,20,30,40,50]. REMOVE(list, 2) removes the element at index 2 (which is 20) → [10,30,40,50]."
+  },
+  {
+    bi:"BI 3", topic:"Algorithms",
+    q:"Which is true about the relationship between algorithms and programs?",
+    opts:["An algorithm must be written in a specific programming language","A program is an implementation of an algorithm in a programming language","Algorithms and programs are the same thing","A program can only implement one algorithm"],
+    correct:1,
+    fb:"Algorithm = language-agnostic step-by-step procedure. Program = that algorithm expressed in an actual programming language (Python, Java, etc.)."
+  },
+  {
+    bi:"BI 3", topic:"Functions",
+    q:"What does mystery(15) return?\n\nPROCEDURE mystery(n) {\n  IF n MOD 2 = 0 { RETURN \"even\" }\n  ELSE { RETURN \"odd\" }\n}",
+    opts:["15","even","odd","0"],
+    correct:2,
+    fb:"15 MOD 2 = 1 (not 0), so the condition is FALSE → ELSE branch executes → returns 'odd'."
+  },
+  {
+    bi:"BI 3", topic:"Simulation",
+    q:"Which of the following BEST describes a simulation?",
+    opts:["A program that stores user data in a database","A digital model that mimics a real-world process to test outcomes safely","A binary search of a sorted list","A lossless compression of video data"],
+    correct:1,
+    fb:"Simulations model real-world phenomena computationally — used when physical experiments are too costly, dangerous, or time-consuming (weather, drug trials, physics)."
+  },
+
+  // ── BI 4 — Computer Systems & Networks (10) ──────────────
+  {
+    bi:"BI 4", topic:"Protocols",
+    q:"Which protocol provides reliable, ordered delivery of packets and retransmits lost ones?",
+    opts:["IP","TCP","UDP","DNS"],
+    correct:1,
+    fb:"TCP = reliable + ordered + retransmits. UDP is fast but unreliable. IP just routes packets. DNS resolves domain names to IP addresses."
+  },
+  {
+    bi:"BI 4", topic:"Parallel Computing",
+    q:"A program takes 8 seconds sequentially. 6 seconds of the work can be parallelized across 3 processors equally. What is the minimum total runtime?",
+    opts:["2 seconds","4 seconds","6 seconds","8 seconds"],
+    correct:1,
+    fb:"Sequential portion = 8−6 = 2 sec (unavoidable). Parallel portion: 6÷3 = 2 sec per processor. Total = 2+2 = 4 sec. The sequential portion caps the speedup."
+  },
+  {
+    bi:"BI 4", topic:"Internet",
+    q:"Why is DNS distributed across many servers worldwide?",
+    opts:["Because IP addresses are too large for one server","To prevent a single point of failure and provide scalability and speed","To make encryption stronger","Because each website needs its own DNS server"],
+    correct:1,
+    fb:"Distribution = scalability + fault tolerance + speed (nearby servers respond faster). No single point of failure — the internet is designed to route around damage."
+  },
+  {
+    bi:"BI 4", topic:"Network Performance",
+    q:"Which describes the relationship between bandwidth and throughput?",
+    opts:["They are synonymous","Bandwidth is the actual rate; throughput is the maximum capacity","Throughput is generally less than bandwidth due to overhead and congestion","Throughput is measured in bytes; bandwidth is in bits"],
+    correct:2,
+    fb:"Bandwidth = MAX capacity (highway lanes). Throughput = actually achieved (cars/hour). Always: throughput ≤ bandwidth."
+  },
+  {
+    bi:"BI 4", topic:"Security",
+    q:"A website uses HTTPS. Which is true?",
+    opts:["The website's content is publicly readable during transit","Data between browser and server is encrypted and the server's identity is verified","HTTPS is only required for pages with login forms","HTTPS means the website content is legal and trustworthy"],
+    correct:1,
+    fb:"HTTPS = HTTP + TLS encryption + certificate authority verification. It protects data in transit, not content quality — a scam site can validly use HTTPS."
+  },
+  {
+    bi:"BI 4", topic:"Protocols",
+    q:"Packets from the same web request may arrive out of order. Which protocol reassembles them correctly?",
+    opts:["IP","DNS","UDP","TCP"],
+    correct:3,
+    fb:"TCP uses sequence numbers to track packet order and reassembles them correctly at the destination. IP just routes; UDP doesn't guarantee order."
+  },
+  {
+    bi:"BI 4", topic:"Internet",
+    q:"Which BEST describes fault tolerance in network design?",
+    opts:["Faster speeds when many users connect simultaneously","The ability for a network to continue operating when nodes or connections fail","Encryption of data during transmission","Use of a single central server to coordinate all traffic"],
+    correct:1,
+    fb:"Fault tolerance = redundant paths. If one router fails, packets route around it. The internet was explicitly designed with this principle."
+  },
+  {
+    bi:"BI 4", topic:"Parallel Computing",
+    q:"Which requires parallel processing to be practical?",
+    opts:["Looking up a phone number in a contact list","Simulating all protein folding combinations for drug discovery in a reasonable time","Adding two variables in a calculation","Displaying a web page"],
+    correct:1,
+    fb:"Protein folding has astronomical combinations — requires massive GPU/CPU parallelism. On a single core, it would take longer than the age of the universe for complex proteins."
+  },
+  {
+    bi:"BI 4", topic:"Protocols",
+    q:"What is the PRIMARY role of an IP address?",
+    opts:["Encrypting data between two devices","Uniquely identifying a device on a network so packets can be routed to it","Converting domain names to physical locations","Establishing a reliable connection before data transfer"],
+    correct:1,
+    fb:"IP addresses are the addressing system of the internet — every device has one, and routers use them to direct packets to their destination."
+  },
+  {
+    bi:"BI 4", topic:"Network Performance",
+    q:"A 500 MB file transfers over a 100 Mbps connection. Approximately how long will the transfer take?",
+    opts:["5 seconds","40 seconds","50 seconds","500 seconds"],
+    correct:1,
+    fb:"500 MB = 500×8 = 4,000 Mb. Time = 4,000 Mb ÷ 100 Mbps = 40 seconds. Key trap: convert BYTES to BITS first (1 byte = 8 bits)."
+  },
+
+  // ── BI 5 — Impact of Computing (15) ──────────────────────
+  {
+    bi:"BI 5", topic:"Algorithmic Bias",
+    q:"A streaming service trains on past user views. Most users from Group X prefer action movies; the algorithm recommends action movies aggressively to all Group X users. This is an example of:",
+    opts:["Open-source bias","Algorithmic bias reinforced by a feedback loop","Phishing","Run-length encoding"],
+    correct:1,
+    fb:"Trained on past data → recommends accordingly → users watch more → algorithm sees the pattern stronger. Classic feedback loop reinforcing bias."
+  },
+  {
+    bi:"BI 5", topic:"Privacy",
+    q:"'Anonymous' location data is shared with researchers. Why is privacy still a concern?",
+    opts:["Anonymous data can be reverse-encrypted","Inferences and cross-referencing with other datasets can re-identify individuals","The data is encoded in lossless compression","GPS coordinates are stored as binary"],
+    correct:1,
+    fb:"Re-identification through inference is a major privacy risk. Location traces alone can reveal home and work addresses — making 'anonymous' data identifiable."
+  },
+  {
+    bi:"BI 5", topic:"Digital Divide",
+    q:"Which BEST describes the digital divide?",
+    opts:["Only differences in internet access between countries","Unequal access to devices, internet, AND the skills and outcomes to use them","The gap between Wi-Fi and cellular speeds","The compatibility difference between operating systems"],
+    correct:1,
+    fb:"Three dimensions: access (can you get online?), use (do you have the skills and time?), and outcome (do you actually benefit?). All three matter."
+  },
+  {
+    bi:"BI 5", topic:"Intellectual Property",
+    q:"Which is true about Creative Commons licenses?",
+    opts:["Anything online is automatically Creative Commons","They let creators share work with stated conditions such as attribution required","They eliminate copyright protection","They apply only to open-source software"],
+    correct:1,
+    fb:"Creative Commons doesn't replace copyright — creators retain it while granting specific permissions. Variants include attribution-only, noncommercial, share-alike, etc."
+  },
+  {
+    bi:"BI 5", topic:"Privacy vs Security",
+    q:"Which BEST distinguishes privacy from security?",
+    opts:["Privacy is about hardware; security is about software","Privacy is control over your information; security is protection from unauthorized access","Privacy applies only to PII; security applies to all data","They are the same concept with different names"],
+    correct:1,
+    fb:"A system can be SECURE but privacy-invasive (locks up everything it collects and analyzes it). Privacy and security overlap but are distinct concepts."
+  },
+  {
+    bi:"BI 5", topic:"Cybersecurity",
+    q:"A phishing email asks you to 'verify your account' via a link. The attacker is exploiting:",
+    opts:["Algorithmic bias","A flaw in the TCP protocol","Human trust and behavior (social engineering)","A buffer overflow"],
+    correct:2,
+    fb:"Phishing exploits people, not systems. Technical defenses (firewalls, encryption) don't stop a user clicking a convincing malicious link."
+  },
+  {
+    bi:"BI 5", topic:"Computing Impacts",
+    q:"Which is a DIRECT impact of widespread video conferencing technology?",
+    opts:["Reduced demand for downtown office space","Shifts in housing demand toward suburbs","Enabling remote meetings between people in different locations","Increased revenue at coffee shops near homes"],
+    correct:2,
+    fb:"Direct = immediate, intended effect. The other options are INDIRECT downstream consequences (real, but not what the technology directly does)."
+  },
+  {
+    bi:"BI 5", topic:"Algorithmic Bias",
+    q:"A city's predictive policing algorithm sends more patrols to neighborhoods with historically high arrest rates. Over time, arrests increase in those neighborhoods. This most directly illustrates:",
+    opts:["Appropriate use of big data","A feedback loop amplifying algorithmic bias","The benefits of computing for public safety","A runtime error in the policing system"],
+    correct:1,
+    fb:"More patrols → more arrests → algorithm sees 'high crime' → more patrols. The algorithm measures policing intensity, not underlying crime. A self-reinforcing feedback loop."
+  },
+  {
+    bi:"BI 5", topic:"Privacy",
+    q:"Which of the following is PII (Personally Identifiable Information)?",
+    opts:["The average age of all users on a platform","A specific user's email address and home zip code","Total monthly sales for a business","The most popular search term on a website"],
+    correct:1,
+    fb:"PII = any information that can identify a specific individual. Email + zip code can identify someone. Aggregated data (averages, totals) is generally not PII."
+  },
+  {
+    bi:"BI 5", topic:"Intellectual Property",
+    q:"A student copies 3 lines of code from a Stack Overflow answer without attribution. Which is MOST accurate?",
+    opts:["Fine because code is not creative work","This may violate the license of the original post depending on its terms","Attribution is only required for images, not code","Stack Overflow answers are always public domain"],
+    correct:1,
+    fb:"Stack Overflow content is CC BY-SA licensed. Using code without attribution may violate those terms. Code is intellectual property just like text or images."
+  },
+  {
+    bi:"BI 5", topic:"Open Source",
+    q:"Which BEST describes open-source software?",
+    opts:["Software that is free to use with no restrictions","Software whose source code is publicly available, often with a license governing use","Software that runs in a browser without installation","Software created collaboratively by governments"],
+    correct:1,
+    fb:"Open source = source code is public. Licenses (MIT, GPL, Apache) vary — some require attribution, share-alike, or restrict commercial use. 'Public' ≠ 'no rules.'"
+  },
+  {
+    bi:"BI 5", topic:"Computing Impacts",
+    q:"The introduction of GPS navigation apps has caused which INDIRECT effect?",
+    opts:["Drivers can see turn-by-turn directions on their phones","Residential streets near highways experience increased cut-through traffic","Maps are displayed digitally instead of on paper","Users can search for nearby restaurants"],
+    correct:1,
+    fb:"Indirect = unintended downstream consequence. GPS → efficient routing → apps route through residential streets → more cut-through traffic. Options A, C, D are direct/intended."
+  },
+  {
+    bi:"BI 5", topic:"Cybersecurity",
+    q:"Two-factor authentication (2FA) improves security by:",
+    opts:["Making passwords longer and harder to guess","Requiring a second verification step even if a password is compromised","Encrypting the password before it is stored","Using biometrics instead of passwords entirely"],
+    correct:1,
+    fb:"2FA adds a second factor (something you HAVE: phone, hardware key) so that stealing a password alone isn't enough to access an account."
+  },
+  {
+    bi:"BI 5", topic:"Benefits & Risks",
+    q:"Which scenario represents a computing BENEFIT that most clearly outweighs its risks?",
+    opts:["Social media enabling rapid spread of misinformation","Machine learning detecting cancer in medical images as accurately as specialist radiologists","Algorithmic trading causing sudden market crashes","Data breaches exposing millions of health records"],
+    correct:1,
+    fb:"ML diagnostics catch early-stage cancers that humans miss, saving lives at scale. The exam asks you to weigh both sides — not all computing is good or all bad."
+  },
+  {
+    bi:"BI 5", topic:"Privacy",
+    q:"A company collects browsing data to train its AI recommendation model. Users agreed to terms of service but were not explicitly told their data trains AI. Which concept does this PRIMARILY raise?",
+    opts:["Bandwidth limitations of data collection","Transparency and informed consent in data use","A technical runtime error in data collection","Lossy compression of behavioral data"],
+    correct:1,
+    fb:"Consent must be INFORMED to be meaningful. Burying AI training in terms of service without clear disclosure violates transparency norms — a common real-world and AP CSP exam scenario."
+  }
+];
+
+// ─── Daily question (date-seeded, consistent per day) ────────
+function getDailyQ() {
+  const d = new Date();
+  const seed = d.getFullYear() * 10000 + (d.getMonth()+1) * 100 + d.getDate();
+  return QUESTIONS[seed % QUESTIONS.length];
+}
+
+// ─── State ───────────────────────────────────────────────────
+const state = {
+  view: "home",
+  mode: null,
+  filter: null,
+  pool: [],
+  i: 0,
+  selected: null,
+  locked: false,
+  results: []
+};
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length-1; i>0; i--) {
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+const app = document.getElementById("app");
+
+// ─── Views ───────────────────────────────────────────────────
+function viewHome() {
+  state.view = "home";
+  const dq = getDailyQ();
+  const biCounts = {};
+  BIG_IDEAS.forEach(b => { biCounts[b.id] = QUESTIONS.filter(q => q.bi === b.id).length; });
+
+  app.innerHTML = `
+    <header class="hd">
+      <div class="hd-title">
+        <h1>AP CSP Drill</h1>
+        <div class="sub">70 MCQs · 5 Big Ideas · exam-weighted</div>
+      </div>
+      <div class="hd-stats">
+        <div class="stat"><strong>70</strong> questions</div>
+        <div class="stat"><strong>5</strong> Big Ideas</div>
+      </div>
+    </header>
+
+    <div class="qotd" id="qotd-btn">
+      <div class="qotd-label">Question of the Day</div>
+      <div class="qotd-q">[${dq.bi} · ${dq.topic}] ${escapeHTML(dq.q.split("\n")[0])}</div>
+      <div class="qotd-hint">Tap to answer →</div>
+    </div>
+
+    <div class="section-label">Practice Mode</div>
+    <div class="modes">
+      <button class="mode-tile" data-mode="drill">
+        <div class="mode-h">⚡ Quick Drill</div>
+        <div class="mode-s">All 70 questions shuffled, instant feedback after each answer. Learn as you go.</div>
+        <span class="mode-tag">recommended for tonight</span>
+      </button>
+      <button class="mode-tile" data-mode="test">
+        <div class="mode-h">📝 Full Practice Test</div>
+        <div class="mode-s">All 70 questions in order, score revealed at the end. Mirrors the actual exam.</div>
+        <span class="mode-tag">simulate test day</span>
+      </button>
+      <button class="mode-tile full-width" data-mode="bi">
+        <div class="mode-h">🎯 By Big Idea</div>
+        <div class="mode-s">Drill one Big Idea at a time — target your weak spots. Covers all 5 BIs with their actual exam weights.</div>
+        <span class="mode-tag">targeted review</span>
+      </button>
+    </div>
+
+    <div class="section-label">Reference</div>
+    <div class="modes">
+      <button class="mode-tile" data-mode="wr">
+        <div class="mode-h">✍️ Written Response</div>
+        <div class="mode-s">Create Performance Task guide — what's required, how scoring works, what to write for each prompt.</div>
+        <span class="mode-tag">create task</span>
+      </button>
+      <button class="mode-tile" data-mode="cheat">
+        <div class="mode-h">📋 Cheat Sheet</div>
+        <div class="mode-s">High-frequency facts, formulas, pseudocode rules, and traps that always appear on the exam.</div>
+        <span class="mode-tag">last-minute review</span>
+      </button>
+    </div>
+  `;
+
+  document.getElementById("qotd-btn").addEventListener("click", () => startQOTD());
+  app.querySelectorAll(".mode-tile[data-mode]").forEach(el => {
+    el.addEventListener("click", () => {
+      const m = el.dataset.mode;
+      if (m === "cheat") viewCheat();
+      else if (m === "wr") viewWR();
+      else if (m === "bi") viewBIPicker();
+      else startQuiz(m, null);
+    });
+  });
+}
+
+function startQOTD() {
+  const dq = getDailyQ();
+  const idx = QUESTIONS.indexOf(dq);
+  state.mode = "drill";
+  state.filter = "qotd";
+  state.view = "drill";
+  state.pool = [idx];
+  state.i = 0; state.selected = null; state.locked = false; state.results = [];
+  renderQuiz();
+}
+
+function viewBIPicker() {
+  state.view = "bi";
+  const biRows = BIG_IDEAS.map(b => {
+    const count = QUESTIONS.filter(q => q.bi === b.id).length;
+    return `
+      <button class="bi-tile" data-bi="${b.id}" style="border-color: var(--border-2);">
+        <div class="bi-num">${b.id}</div>
+        <div class="bi-name">${b.label}</div>
+        <div class="bi-meta">${count} questions · ${b.weight} of exam</div>
+      </button>
+    `;
+  }).join("");
+
+  app.innerHTML = `
+    <header class="hd">
+      <div class="hd-title">
+        <h1>By Big Idea</h1>
+        <div class="sub">targeted drill</div>
+      </div>
+      <div class="hd-stats">
+        <button class="btn" id="back-home">Home</button>
+      </div>
+    </header>
+    <div class="bi-grid">${biRows}</div>
+  `;
+  document.getElementById("back-home").addEventListener("click", viewHome);
+  app.querySelectorAll(".bi-tile").forEach(el => {
+    el.addEventListener("click", () => startQuiz("drill", el.dataset.bi));
+  });
+}
+
+function startQuiz(mode, filter) {
+  state.mode = mode;
+  state.filter = filter || null;
+  state.view = mode;
+  let indices = QUESTIONS.map((_, i) => i);
+  if (filter && filter !== "qotd") indices = indices.filter(i => QUESTIONS[i].bi === filter);
+  state.pool = (mode === "test" && !filter) ? indices : shuffle(indices);
+  state.i = 0; state.selected = null; state.locked = false; state.results = [];
+  renderQuiz();
+}
+
+function renderQuiz() {
+  const qIdx = state.pool[state.i];
+  const q = QUESTIONS[qIdx];
+  const progress = (state.i / state.pool.length) * 100;
+  const score = state.results.filter(r => r.picked === QUESTIONS[r.qIdx].correct).length;
+  const isTest = state.mode === "test";
+  const isLast = state.i === state.pool.length - 1;
+  const filterLabel = state.filter && state.filter !== "qotd"
+    ? BIG_IDEAS.find(b => b.id === state.filter)?.label
+    : null;
+
+  const optHTML = q.opts.map((opt, i) => {
+    let cls = "opt";
+    if (state.locked) {
+      if (i === q.correct) cls += " correct";
+      else if (i === state.selected) cls += " wrong";
+      else cls += " dim";
+    }
+    return `<button class="${cls}" data-i="${i}" ${state.locked ? "disabled" : ""}><span class="opt-letter">${"ABCD"[i]}</span><span>${escapeHTML(opt)}</span></button>`;
+  }).join("");
+
+  const fbHTML = state.locked ? `
+    <div class="fb ${state.selected === q.correct ? "ok" : "no"}">
+      <strong>${state.selected === q.correct ? "✓ Correct." : "✗ Not quite."}</strong> ${escapeHTML(q.fb)}
+    </div>
+  ` : "";
+
+  const showScore = !isTest || state.results.length > 0;
+
+  app.innerHTML = `
+    <header class="hd">
+      <div class="hd-title">
+        <h1>${filterLabel || (state.mode === "test" ? "Practice Test" : "Quick Drill")}</h1>
+        <div class="sub">${state.i+1} of ${state.pool.length}</div>
+      </div>
+      <div class="hd-stats">
+        ${!isTest || state.locked ? `<div class="stat">Score: <strong>${score}/${state.results.length}</strong></div>` : ""}
+        <button class="btn" id="quit">Home</button>
+      </div>
+    </header>
+    <div class="pg"><div class="pg-bar" style="width:${progress}%"></div></div>
+    <div class="card">
+      <div class="qmeta">
+        <span class="tag">${q.bi}</span>
+        <span class="topic-tag">${q.topic}</span>
+        <span>Q${state.i+1}</span>
+      </div>
+      <div class="qtext">${formatQ(q.q)}</div>
+      <div class="opts">${optHTML}</div>
+      ${fbHTML}
+      <div class="actions">
+        <div class="left">${state.locked ? "" : "Pick one · <kbd>A</kbd>–<kbd>D</kbd>"}</div>
+        <div class="right">
+          ${state.locked ? `<button class="btn csp" id="next">${isLast ? "Finish →" : "Next →"}</button>` : ""}
+        </div>
+      </div>
+    </div>
+  `;
+
+  app.querySelectorAll(".opt").forEach(btn => btn.addEventListener("click", () => {
+    if (!state.locked) pickOption(parseInt(btn.dataset.i, 10));
+  }));
+  document.getElementById("next")?.addEventListener("click", advance);
+  document.getElementById("quit").addEventListener("click", viewHome);
+}
+
+function pickOption(i) {
+  state.selected = i;
+  state.locked = true;
+  state.results.push({ qIdx: state.pool[state.i], picked: i });
+  renderQuiz();
+}
+
+function advance() {
+  if (state.i >= state.pool.length-1) viewDone();
+  else { state.i++; state.selected = null; state.locked = false; renderQuiz(); }
+}
+
+function viewDone() {
+  state.view = "done";
+  const correct = state.results.filter(r => r.picked === QUESTIONS[r.qIdx].correct).length;
+  const total = state.results.length;
+  const pct = Math.round((correct/total)*100);
+
+  let verdict, scoreEst;
+  if (pct >= 90) { verdict = "Solid 4–5 territory. Sleep well."; scoreEst = "AP Score estimate: 5"; }
+  else if (pct >= 75) { verdict = "On the 4 track. Quick scan of the cheat sheet in the morning."; scoreEst = "AP Score estimate: 3–4"; }
+  else if (pct >= 60) { verdict = "3 territory. Reread the study guide, focus on missed Big Ideas."; scoreEst = "AP Score estimate: 3"; }
+  else { verdict = "Focus on BI 3 (Algorithms) — biggest weight, biggest swing. Trace pseudocode slowly."; scoreEst = "AP Score estimate: 2–3"; }
+
+  // Per-BI breakdown
+  const biScores = {};
+  BIG_IDEAS.forEach(b => { biScores[b.id] = { correct: 0, total: 0 }; });
+  state.results.forEach(r => {
+    const q = QUESTIONS[r.qIdx];
+    biScores[q.bi].total++;
+    if (r.picked === q.correct) biScores[q.bi].correct++;
+  });
+
+  const biBreakdown = BIG_IDEAS.map(b => {
+    const s = biScores[b.id];
+    if (!s.total) return "";
+    const bpct = Math.round((s.correct/s.total)*100);
+    const color = bpct >= 75 ? "var(--ok)" : bpct >= 50 ? "var(--text-2)" : "var(--bad)";
+    return `<div class="bi-chip"><div class="bc-num" style="color:${color}">${s.correct}/${s.total}</div><div class="bc-label">${b.id}</div></div>`;
+  }).join("");
+
+  const wrong = state.results.filter(r => r.picked !== QUESTIONS[r.qIdx].correct);
+  const reviewHTML = wrong.length === 0 ? "" : `
+    <div class="reviews">
+      <div class="section-label">Review these</div>
+      ${wrong.map(r => {
+        const q = QUESTIONS[r.qIdx];
+        return `<div class="review">
+          <div class="rq">[${q.bi} · ${q.topic}] ${escapeHTML(q.q.split("\n")[0])}</div>
+          <div class="rans">Your answer: ${"ABCD"[r.picked]} · Correct: ${"ABCD"[q.correct]}</div>
+          <div class="rans" style="margin-top:6px;color:var(--text-2)">${escapeHTML(q.fb)}</div>
+        </div>`;
+      }).join("")}
+    </div>
+  `;
+
+  // Find worst BI for retry suggestion
+  const worstBI = BIG_IDEAS.find(b => {
+    const s = biScores[b.id];
+    return s.total > 0 && (s.correct/s.total) < 0.6;
+  });
+
+  app.innerHTML = `
+    <header class="hd">
+      <div class="hd-title"><h1>Done</h1><div class="sub">${state.mode === "test" ? "Practice test" : "Drill"} complete</div></div>
+      <div class="hd-stats"><button class="btn" id="home2">Home</button></div>
+    </header>
+    <div class="done">
+      <h2><span class="pct">${correct}</span> <span style="color:var(--text-3);font-size:32px">/ ${total}</span></h2>
+      <div class="score-est">${scoreEst}</div>
+      <div class="verdict">${pct}% correct · ${verdict}</div>
+      <div class="bi-breakdown">${biBreakdown}</div>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px">
+        <button class="btn" id="again">↻ Try again</button>
+        ${worstBI ? `<button class="btn" id="retry-bi">🎯 Drill ${worstBI.id}</button>` : ""}
+        <button class="btn csp" id="cheat2">📋 Cheat sheet</button>
+      </div>
+      ${reviewHTML}
+    </div>
+  `;
+  document.getElementById("home2").addEventListener("click", viewHome);
+  document.getElementById("again").addEventListener("click", () => startQuiz(state.mode, state.filter));
+  document.getElementById("cheat2").addEventListener("click", viewCheat);
+  document.getElementById("retry-bi")?.addEventListener("click", () => startQuiz("drill", worstBI.id));
+}
+
+function viewCheat() {
+  state.view = "cheat";
+  app.innerHTML = `
+    <header class="hd">
+      <div class="hd-title"><h1>Cheat Sheet</h1><div class="sub">memorize before the exam</div></div>
+      <div class="hd-stats"><button class="btn" id="back">← Home</button></div>
+    </header>
+    <div class="cheat">
+
+      <h3>Pseudocode — never forget these</h3>
+      <ul>
+        <li>Lists are <strong>1-indexed</strong> in AP pseudocode (first element is index 1)</li>
+        <li><code>REPEAT UNTIL cond</code> — stops when cond is <strong>TRUE</strong>; runs while FALSE</li>
+        <li><code>RANDOM(a, b)</code> — <strong>inclusive of both endpoints</strong></li>
+        <li><code>RETURN value</code> ends the procedure and gives back a usable value</li>
+        <li><code>DISPLAY</code> only prints — the output cannot be captured or passed to another procedure</li>
+        <li>Initialize min/max to <code>list[1]</code>, never to 0 (0 fails for all-positive lists)</li>
+        <li><code>APPEND(list, val)</code> adds to end; <code>REMOVE(list, i)</code> removes element at index i</li>
+        <li><code>x ← x + 1</code> is valid — assignment overwrites, it's not an equation</li>
+        <li>Put <code>RETURN false</code> OUTSIDE the loop when checking if ANY element matches</li>
+      </ul>
+
+      <h3>Bit math</h3>
+      <ul>
+        <li><strong>n bits</strong> → 2ⁿ patterns; max unsigned value = 2ⁿ − 1</li>
+        <li><strong>Image bits</strong> = width × height × bitsPerPixel · divide by 8 for bytes</li>
+        <li><strong>Audio bits</strong> = sampleRate × bitDepth × channels × seconds</li>
+        <li>24-bit color = 2²⁴ ≈ 16.7 million colors (8 bits per R/G/B channel)</li>
+        <li>ISPs advertise in <strong>bits/s</strong>; files are in <strong>bytes</strong> — 8× difference, easy trap</li>
+        <li>Overflow = result exceeds bit range and wraps</li>
+      </ul>
+
+      <h3>Boolean logic — De Morgan's Law</h3>
+      <ul>
+        <li><code>NOT(A AND B)</code> = <code>(NOT A) OR (NOT B)</code></li>
+        <li><code>NOT(A OR B)</code> = <code>(NOT A) AND (NOT B)</code></li>
+        <li>AND flips to OR. OR flips to AND. NOT distributes inward.</li>
+      </ul>
+
+      <h3>Search &amp; efficiency</h3>
+      <ul>
+        <li><strong>Linear search</strong> — works on any list, O(n) worst case</li>
+        <li><strong>Binary search</strong> — requires <strong>sorted</strong> list, O(log n)</li>
+        <li><strong>Decidable</strong> — an algorithm exists that solves it correctly for all inputs</li>
+        <li><strong>Undecidable</strong> — no such algorithm exists (Halting Problem is the classic example)</li>
+        <li>"Computationally expensive" ≠ "undecidable" — NP-hard problems are hard but decidable</li>
+        <li><strong>Heuristic</strong> — practical shortcut, not guaranteed to be optimal</li>
+        <li><strong>Reasonable time</strong> = polynomial (nᵏ); <strong>unreasonable</strong> = exponential (2ⁿ)</li>
+      </ul>
+
+      <h3>Error types — name them on sight</h3>
+      <table>
+        <tr><th>Type</th><th>Trigger</th><th>Symptom</th></tr>
+        <tr><td><strong>Syntax</strong></td><td>Language rule broken</td><td>Won't run at all</td></tr>
+        <tr><td><strong>Runtime</strong></td><td>Illegal operation at execution (div by 0)</td><td>Crashes mid-run</td></tr>
+        <tr><td><strong>Logic</strong></td><td>Wrong algorithm</td><td>Runs, wrong output</td></tr>
+        <tr><td><strong>Overflow</strong></td><td>Result exceeds bit range</td><td>Wraps to unexpected value</td></tr>
+      </table>
+
+      <h3>Protocols — one line each</h3>
+      <table>
+        <tr><th>Protocol</th><th>Role</th></tr>
+        <tr><td><strong>IP</strong></td><td>Addressing &amp; routing — best effort, no guarantee</td></tr>
+        <tr><td><strong>TCP</strong></td><td>Reliable, ordered delivery, retransmits lost packets</td></tr>
+        <tr><td><strong>UDP</strong></td><td>Fast, unreliable — streaming/games (low latency > reliability)</td></tr>
+        <tr><td><strong>HTTP</strong></td><td>Web requests (over TCP)</td></tr>
+        <tr><td><strong>HTTPS</strong></td><td>HTTP + TLS encryption + certificate authority verification</td></tr>
+        <tr><td><strong>DNS</strong></td><td>Domain name → IP address (distributed phonebook)</td></tr>
+      </table>
+
+      <h3>Network performance</h3>
+      <ul>
+        <li><strong>Bandwidth</strong> — maximum capacity (highway lanes)</li>
+        <li><strong>Latency</strong> — one-way travel time (speed, not volume)</li>
+        <li><strong>Throughput</strong> — actual rate achieved in practice (always ≤ bandwidth)</li>
+        <li>DNS failure ≠ site down — browser can't look up the IP, but the server is still running</li>
+        <li>Internet fault tolerance: redundant paths route around failed nodes</li>
+      </ul>
+
+      <h3>Parallel computing timing</h3>
+      <ul>
+        <li>Total time = <strong>sequential portion</strong> + <strong>longest</strong> parallel task</li>
+        <li>NOT the sum of all parallel tasks — they run simultaneously</li>
+        <li>The sequential portion <strong>caps the maximum speedup</strong> (Amdahl's Law)</li>
+        <li>Doubling processors does NOT halve total runtime if any sequential work remains</li>
+      </ul>
+
+      <h3>Compression</h3>
+      <ul>
+        <li><strong>Lossless</strong> — bit-perfect reconstruction; great for text/code (ZIP, PNG)</li>
+        <li><strong>Lossy</strong> — data discarded permanently at compress time (JPEG, MP3)</li>
+        <li>Opening a lossy file repeatedly does NOT add more loss — damage is fixed at compress time</li>
+        <li>Highly random data compresses poorly — compression needs repetition</li>
+      </ul>
+
+      <h3>Impact &amp; ethics</h3>
+      <ul>
+        <li><strong>Privacy</strong> = control over your info · <strong>Security</strong> = protection from unauthorized access (not the same)</li>
+        <li>"Anonymous" data can be re-identified by inference or cross-referencing (mosaic effect)</li>
+        <li>Digital divide = <em>access</em> + <em>use (skills)</em> + <em>outcome</em> — all three dimensions matter</li>
+        <li>Algorithmic bias sources: training data, labels, goals, feedback loops</li>
+        <li>Feedback loops amplify bias — bad model → biased output → output becomes training data → worse model</li>
+        <li>Open source ≠ no rules — most licenses require attribution (MIT, GPL, CC-BY)</li>
+        <li>Direct impact = immediate, intended effect. Indirect = downstream, unintended consequence.</li>
+        <li>Phishing = social engineering — exploits people, not technical vulnerabilities</li>
+        <li>2FA: something you KNOW (password) + something you HAVE (phone/key)</li>
+      </ul>
+
+      <h3>Big Idea exam weights</h3>
+      <table>
+        <tr><th>Big Idea</th><th>Weight</th><th>Questions in this bank</th></tr>
+        <tr><td>BI 3 — Algorithms &amp; Programming</td><td><strong>30–35%</strong></td><td>23</td></tr>
+        <tr><td>BI 5 — Impact of Computing</td><td>21–26%</td><td>15</td></tr>
+        <tr><td>BI 2 — Data</td><td>17–22%</td><td>14</td></tr>
+        <tr><td>BI 4 — Computer Systems &amp; Networks</td><td>11–15%</td><td>10</td></tr>
+        <tr><td>BI 1 — Creative Development</td><td>10–13%</td><td>8</td></tr>
+      </table>
+
+      <h3>Test-day strategy</h3>
+      <ul>
+        <li>70 MCQ in 120 min ≈ <strong>1:42 per question</strong></li>
+        <li>Flag anything taking more than 2 min — skip and come back</li>
+        <li>No penalty for wrong answers — <strong>never leave blank</strong></li>
+        <li>If two answers look nearly identical, the correct one is usually one of them</li>
+        <li>Read ALL four options before clicking — the best answer may not be the first good one</li>
+      </ul>
+    </div>
+  `;
+  document.getElementById("back").addEventListener("click", viewHome);
+}
+
+function viewWR() {
+  state.view = "wr";
+  app.innerHTML = `
+    <header class="hd">
+      <div class="hd-title"><h1>Written Response</h1><div class="sub">Create Performance Task guide</div></div>
+      <div class="hd-stats"><button class="btn" id="back">← Home</button></div>
+    </header>
+    <div class="wr">
+
+      <div class="wr-section">
+        <h3>What is the Create Performance Task?</h3>
+        <p>The CPT is a through-course assessment completed during <strong>12 hours of class time</strong>. You write a program in any language, record a short video, and submit written responses. It counts toward your final AP score.</p>
+        <p>The program must include: a <strong>list</strong> that stores data, a <strong>procedure/function</strong> with at least one parameter that uses sequencing, selection, and iteration, and it must do something meaningful.</p>
+      </div>
+
+      <div class="wr-section">
+        <h3>What you submit</h3>
+        <ul>
+          <li><strong>Source code</strong> — the complete program</li>
+          <li><strong>Video</strong> — under 1 minute, showing the program running with at least one visual output</li>
+          <li><strong>Written responses</strong> — answers to College Board prompts about your program's purpose, data, procedure, algorithm, and testing</li>
+        </ul>
+        <p style="margin-top:10px;font-size:12px;color:var(--text-3)">Always verify the current year's exact prompts and requirements at collegeboard.org — they update annually.</p>
+      </div>
+
+      <div class="wr-section">
+        <h3>Scoring — 6 rows, 1 point each</h3>
+        <div class="wr-row">
+          <div class="wr-pt">1</div>
+          <div class="wr-body"><strong>Program Purpose and Function</strong> — Describe the purpose of your program (what problem it solves or what it does) and what your video demonstrates. Don't just describe the code — describe the <em>purpose</em>.</div>
+        </div>
+        <div class="wr-row">
+          <div class="wr-pt">1</div>
+          <div class="wr-body"><strong>Data Abstraction</strong> — Show code where a list stores data. Describe what the list contains and what type of data is stored.</div>
+        </div>
+        <div class="wr-row">
+          <div class="wr-pt">1</div>
+          <div class="wr-body"><strong>Managing Complexity</strong> — Explain HOW the list manages complexity. What would you have to do differently (harder) if you didn't use a list? Be specific.</div>
+        </div>
+        <div class="wr-row">
+          <div class="wr-pt">1</div>
+          <div class="wr-body"><strong>Procedural Abstraction</strong> — Show the procedure/function with a parameter. Describe what it does and how the parameter changes its behavior.</div>
+        </div>
+        <div class="wr-row">
+          <div class="wr-pt">1</div>
+          <div class="wr-body"><strong>Algorithm Implementation</strong> — Describe an algorithm inside your procedure that includes <em>sequencing, selection, AND iteration</em>. Walk through an example — what does each step do?</div>
+        </div>
+        <div class="wr-row">
+          <div class="wr-pt">1</div>
+          <div class="wr-body"><strong>Testing</strong> — Describe two different test cases: what input you used, what you expected, what actually happened, and what it tells you.</div>
+        </div>
+      </div>
+
+      <div class="wr-section">
+        <h3>Common mistakes that lose points</h3>
+        <ul>
+          <li>Describing WHAT the code does instead of its <em>purpose</em> (Row 1)</li>
+          <li>Using a list that acts like a single variable — the list must actually manage complexity (Row 3)</li>
+          <li>Procedure has no meaningful parameter, or parameter doesn't affect behavior (Row 4)</li>
+          <li>Algorithm description is missing selection OR iteration — you need all three (Row 5)</li>
+          <li>Test cases are identical inputs, or you only describe expected output without saying what actually happened (Row 6)</li>
+          <li>The video doesn't show a visual output running — a terminal is fine, but something must visibly happen</li>
+        </ul>
+      </div>
+
+      <div class="wr-section">
+        <h3>What counts as a good list use</h3>
+        <ul>
+          <li>Storing a collection of quiz questions, user scores, or color values — and iterating over all of them</li>
+          <li>Building a playlist and playing each item in order</li>
+          <li>Tracking multiple inventory items and finding the min/max</li>
+          <li><strong>Bad example:</strong> using a list with exactly one item — that's just a variable</li>
+          <li><strong>Ask yourself:</strong> if the number of items could grow, does the list handle it automatically? If yes, you're using it right</li>
+        </ul>
+      </div>
+
+      <div class="wr-section">
+        <h3>What counts as a good procedure</h3>
+        <ul>
+          <li>A function called with different arguments that returns different results each time</li>
+          <li>Must have at least one <strong>parameter</strong> that meaningfully changes what the function does</li>
+          <li>Must contain sequencing (steps in order) + selection (IF/ELSE) + iteration (loop)</li>
+          <li><strong>Bad example:</strong> a procedure that just DISPLAYs a fixed string — no parameter, no algorithm</li>
+        </ul>
+      </div>
+
+      <div class="wr-section">
+        <h3>Sample testing language (Row 6)</h3>
+        <p>"I tested with input <code>X</code> (expected Y, got Y — correct). I also tested with input <code>Z</code> (an edge case where the list is empty — expected the function to return 0 and not crash, which it did). These two tests cover the typical case and the boundary case."</p>
+      </div>
+
+    </div>
+  `;
+  document.getElementById("back").addEventListener("click", viewHome);
+}
+
+// ─── Utilities ───────────────────────────────────────────────
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+
+function formatQ(s) {
+  if (s.includes("\n")) {
+    const lines = s.split("\n");
+    const first = escapeHTML(lines[0]);
+    const rest = lines.slice(1).join("\n");
+    return rest.trim() ? `<div>${first}</div><pre>${escapeHTML(rest)}</pre>` : escapeHTML(s);
+  }
+  return escapeHTML(s);
+}
+
+document.addEventListener("keydown", e => {
+  if (state.view !== "drill" && state.view !== "test") return;
+  if (!state.locked) {
+    const idx = "abcd".indexOf(e.key.toLowerCase());
+    if (idx >= 0) { pickOption(idx); e.preventDefault(); }
+  } else {
+    if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight") { advance(); e.preventDefault(); }
+  }
+});
+
+viewHome();
+</script>
+</body>
+</html>
