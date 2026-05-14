@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AP CSP Drill</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Sora:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #121212;
+    --bg-2: #161616;
+    --surface: #1a1a1a;
+    --surface-2: #232323;
+    --border: rgba(255,255,255,0.06);
+    --border-2: rgba(255,255,255,0.10);
+    --border-3: rgba(255,255,255,0.16);
+    --text: rgba(255,255,255,0.87);
+    --text-2: rgba(255,255,255,0.60);
+    --text-3: rgba(255,255,255,0.38);
+    --csp: #3a87ab;
+    --csp-dim: rgba(58, 135, 171, 0.12);
+    --csp-soft: rgba(58, 135, 171, 0.22);
+    --ok: #7fb89a;
+    --ok-dim: rgba(127, 184, 154, 0.14);
+    --bad: #d4807e;
+    --bad-dim: rgba(212, 128, 126, 0.14);
+    --radius: 8px;
+    --radius-lg: 14px;
+    --font-display: 'Instrument Serif', Georgia, serif;
+    --font-sans: 'Sora', system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.55;
+    letter-spacing: -0.005em;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background:
+      radial-gradient(ellipse at 30% -10%, var(--csp-dim) 0%, transparent 55%),
+      var(--bg);
+    min-height: 100vh;
+  }
+  .app { max-width: 760px; margin: 0 auto; padding: 48px 24px 96px; }
+
+  /* Header */
+  .hd { display: flex; justify-content: space-between; align-items: flex-end; gap: 18px; margin-bottom: 36px; flex-wrap: wrap; }
+  .hd-title h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(32px, 5vw, 44px); line-height: 1; letter-spacing: -0.01em; }
+  .hd-title .sub { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.16em; color: var(--text-3); margin-top: 6px; }
+  .hd-stats { display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--text-2); flex-wrap: wrap; }
+  .stat { padding: 6px 10px; border: 1px solid var(--border-2); border-radius: var(--radius); font-variant-numeric: tabular-nums; }
+  .stat strong { color: var(--text); font-weight: 500; }
+
+  /* Progress */
+  .pg { height: 2px; background: var(--border); border-radius: 999px; margin-bottom: 32px; overflow: hidden; }
+  .pg-bar { height: 100%; background: var(--csp); transition: width 0.3s ease; }
+
+  /* Question card */
+  .card {
+    background:
+      radial-gradient(ellipse at 50% -30%, var(--csp-dim) 0%, transparent 60%),
+      var(--surface);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-lg);
+    padding: 28px 28px 24px;
+    animation: fade 0.3s ease both;
+  }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+  .qmeta { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; font-size: 10.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-3); }
+  .tag { color: var(--csp); border: 1px solid var(--csp-soft); padding: 3px 8px; border-radius: 999px; }
+  .qtext { font-size: 17px; line-height: 1.55; color: var(--text); margin-bottom: 22px; white-space: pre-wrap; }
+  .qtext pre, .qtext code { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 13px; }
+  .qtext pre { background: var(--bg-2); border: 1px solid var(--border); padding: 12px 14px; border-radius: var(--radius); margin: 12px 0; overflow-x: auto; white-space: pre; }
+
+  /* Options */
+  .opts { display: flex; flex-direction: column; gap: 8px; }
+  .opt {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 13px 16px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius);
+    color: var(--text);
+    text-align: left;
+    font: 400 14.5px var(--font-sans);
+    letter-spacing: -0.005em;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .opt:hover:not(:disabled) { border-color: var(--border-3); background: var(--surface); }
+  .opt:disabled { cursor: default; }
+  .opt-letter { color: var(--text-3); font-weight: 500; font-size: 12.5px; min-width: 14px; padding-top: 1px; letter-spacing: 0.05em; }
+  .opt.correct { border-color: var(--ok); background: var(--ok-dim); }
+  .opt.correct .opt-letter { color: var(--ok); }
+  .opt.wrong { border-color: var(--bad); background: var(--bad-dim); }
+  .opt.wrong .opt-letter { color: var(--bad); }
+  .opt.dim { opacity: 0.55; }
+
+  /* Feedback */
+  .fb { margin-top: 18px; padding: 14px 16px; border-radius: var(--radius); border: 1px solid var(--border-2); background: var(--bg-2); font-size: 13.5px; line-height: 1.6; color: var(--text-2); animation: fade 0.25s ease both; }
+  .fb strong { color: var(--text); font-weight: 500; }
+  .fb.ok { border-color: var(--ok); background: var(--ok-dim); color: var(--text); }
+  .fb.no { border-color: var(--bad); background: var(--bad-dim); color: var(--text); }
+
+  /* Bottom actions */
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 22px; gap: 10px; flex-wrap: wrap; }
+  .actions .left { color: var(--text-3); font-size: 12px; }
+  .actions .right { display: flex; gap: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 9px 16px; border-radius: var(--radius);
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border-2); cursor: pointer;
+    font: 500 13px var(--font-sans); letter-spacing: -0.005em;
+    transition: background .15s ease, border-color .15s ease;
+  }
+  .btn:hover { background: var(--surface); border-color: var(--border-3); }
+  .btn.primary { background: var(--text); color: #0a0a0a; border-color: transparent; }
+  .btn.primary:hover { background: #fff; }
+  .btn.csp { background: var(--csp); color: #fff; border-color: transparent; }
+  .btn.csp:hover { filter: brightness(1.08); }
+
+  /* Done screen */
+  .done { text-align: center; padding: 48px 24px; animation: fade 0.4s ease both; }
+  .done h2 { font-family: var(--font-display); font-weight: 400; font-size: 48px; line-height: 1; margin-bottom: 12px; }
+  .done .pct { color: var(--csp); }
+  .done .verdict { font-size: 14px; color: var(--text-2); margin-bottom: 24px; }
+  .done .reviews { text-align: left; max-width: 600px; margin: 32px auto 0; }
+  .review { padding: 14px 16px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px; font-size: 13px; }
+  .review .rq { color: var(--text-2); font-weight: 500; }
+  .review .rans { font-size: 12px; color: var(--text-3); margin-top: 4px; }
+
+  /* Cheatsheet view */
+  .cheat { animation: fade 0.3s ease both; }
+  .cheat h3 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--csp); margin: 22px 0 10px; }
+  .cheat h3:first-child { margin-top: 0; }
+  .cheat ul { padding-left: 20px; line-height: 1.75; font-size: 13.5px; color: var(--text); }
+  .cheat li { margin-bottom: 4px; }
+  .cheat li code, .cheat code { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12.5px; background: var(--bg-2); border: 1px solid var(--border); padding: 1px 5px; border-radius: 4px; color: var(--text); }
+  .cheat table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 10px 0; }
+  .cheat th, .cheat td { padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+  .cheat th { color: var(--csp); font-weight: 500; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.12em; }
+  .cheat td code { font-size: 12px; }
+
+  /* Mode picker */
+  .modes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+  .mode-tile {
+    padding: 22px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    text-align: left;
+    color: var(--text);
+    font: 500 14.5px var(--font-sans);
+    transition: border-color .15s ease, background .15s ease, transform .15s ease;
+  }
+  .mode-tile:hover { border-color: var(--csp-soft); background: var(--surface-2); transform: translateY(-1px); }
+  .mode-tile .mode-h { font-size: 16px; margin-bottom: 6px; color: var(--text); }
+  .mode-tile .mode-s { font-size: 12px; color: var(--text-2); line-height: 1.5; font-weight: 400; }
+  .mode-tile .mode-tag { display: inline-block; margin-top: 8px; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--csp); }
+
+  @media (max-width: 560px) {
+    .app { padding: 32px 16px 64px; }
+    .modes { grid-template-columns: 1fr; }
+    .card { padding: 20px 18px 18px; }
+  }
+
+  /* kbd hint */
+  kbd {
+    display: inline-block;
+    padding: 1px 6px;
+    background: var(--bg-2);
+    border: 1px solid var(--border-2);
+    border-radius: 4px;
+    font-family: 'SFMono-Regular', Consolas, monospace;
+    font-size: 11px;
+    color: var(--text-2);
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+
+<script>
+// ─────────────────────────────────────────────────────────────
+// Question bank — 30 MCQs weighted to actual AP CSP exam
+// ─────────────────────────────────────────────────────────────
+const QUESTIONS = [
+  // BIG IDEA 3 — Algorithms & Programming (10)
+  {
+    bi: "BI 3",
+    q: "What does the following code display?\n\nn ← 4\nREPEAT UNTIL (n > 10) {\n  n ← n + 3\n}\nDISPLAY(n)",
+    opts: ["10", "11", "12", "13"],
+    correct: 3,
+    fb: "REPEAT UNTIL stops when the condition becomes TRUE. Trace: n=4→7→10→13. After 10, condition n>10 is still FALSE, so loop runs once more and n=13."
+  },
+  {
+    bi: "BI 3",
+    q: "Which expression is equivalent to NOT(age >= 18 AND hasParent)?",
+    opts: ["age < 18 AND NOT hasParent", "age < 18 OR NOT hasParent", "age >= 18 OR hasParent", "age <= 18 AND hasParent"],
+    correct: 1,
+    fb: "De Morgan's Law: NOT(A AND B) = (NOT A) OR (NOT B). Note: AND flips to OR."
+  },
+  {
+    bi: "BI 3",
+    q: "A list scores contains [8, 3, 12, 5, 1]. What does this procedure return?\n\nPROCEDURE mystery(list) {\n  best ← list[1]\n  FOR i ← 2 TO LENGTH(list) {\n    IF list[i] < best { best ← list[i] }\n  }\n  RETURN best\n}",
+    opts: ["1", "8", "12", "29"],
+    correct: 0,
+    fb: "Min-finding. best starts at 8, then 3<8→3, 12<3? no, 5<3? no, 1<3→1. Returns 1."
+  },
+  {
+    bi: "BI 3",
+    q: "Which problem is undecidable?",
+    opts: ["Find the largest number in a list", "Determine if two strings are equal", "Determine, for any program and input, whether the program will halt", "Sort a list of 1 million numbers"],
+    correct: 2,
+    fb: "The Halting Problem is THE classic undecidable problem — no algorithm exists that solves it for all inputs."
+  },
+  {
+    bi: "BI 3",
+    q: "A list is unsorted. You need to find a specific value. Which is true?",
+    opts: ["Binary search is faster but works only if you sort first", "Binary search works on unsorted lists in O(log n)", "Linear search is O(log n)", "Sorting then binary-searching is always faster than linear search"],
+    correct: 0,
+    fb: "Binary search requires sorted data. For a single search, sort cost often exceeds savings; for many searches, sort+binary wins."
+  },
+  {
+    bi: "BI 3",
+    q: "What value does count hold after this runs?\n\ncount ← 0\nlist ← [4, 7, 2, 9, 6, 3]\nFOR EACH n IN list {\n  IF n MOD 2 = 0 { count ← count + 1 }\n}",
+    opts: ["2", "3", "4", "6"],
+    correct: 1,
+    fb: "Count even numbers. 4, 2, 6 are even → count = 3."
+  },
+  {
+    bi: "BI 3",
+    q: "A procedure getName() DISPLAYs a name but does not RETURN it. Which is true?",
+    opts: ["You can store its result in a variable", "You cannot use its output as input to another procedure", "DISPLAY and RETURN are interchangeable", "The procedure will return the displayed name automatically"],
+    correct: 1,
+    fb: "DISPLAY only outputs to the user. The result is not a value you can capture or pass forward. RETURN is what provides a usable value."
+  },
+  {
+    bi: "BI 3",
+    q: "RANDOM(1, 6) is called 600 times. Approximately how many times will it return exactly 6?",
+    opts: ["0 — RANDOM excludes endpoints", "100", "120", "600"],
+    correct: 1,
+    fb: "RANDOM(a, b) is INCLUSIVE of both endpoints. Each of the 6 values has ~1/6 probability. 600 × 1/6 ≈ 100. The 'excludes endpoints' answer is the classic trap."
+  },
+  {
+    bi: "BI 3",
+    q: "What does this display?\n\ntotal ← 0\nFOR i ← 1 TO 5 {\n  IF i MOD 2 = 1 { total ← total + i }\n}\nDISPLAY(total)",
+    opts: ["6", "9", "15", "25"],
+    correct: 1,
+    fb: "Sum of odd i values from 1 to 5: 1 + 3 + 5 = 9."
+  },
+  {
+    bi: "BI 3",
+    q: "A heuristic is best described as:",
+    opts: ["An algorithm guaranteed to find the optimal solution", "A method that always produces a correct yes/no answer", "A 'good enough' approach used when an optimal solution is too slow", "A type of decidable problem"],
+    correct: 2,
+    fb: "A heuristic gives a practical, often-good solution without guaranteeing it's the best. Used for hard problems like Traveling Salesman."
+  },
+
+  // BIG IDEA 5 — Impact of Computing (7)
+  {
+    bi: "BI 5",
+    q: "A streaming service uses an algorithm trained on past user views. Most users from Group X prefer action movies; the algorithm recommends action movies aggressively to all Group X users. This is an example of:",
+    opts: ["Open-source bias", "Algorithmic bias reinforced by a feedback loop", "Phishing", "Run-length encoding"],
+    correct: 1,
+    fb: "Trained on past data → recommends accordingly → users watch more → algorithm learns the pattern stronger. Classic feedback loop reinforcing bias."
+  },
+  {
+    bi: "BI 5",
+    q: "'Anonymous' location data is shared with researchers. Why is privacy still a concern?",
+    opts: ["Anonymous data can be reverse-encrypted", "Inferences and cross-referencing with other datasets can re-identify individuals", "The data is encoded in lossless compression", "GPS coordinates are stored as binary"],
+    correct: 1,
+    fb: "Re-identification through inference is a major privacy risk. Even location traces alone can reveal home and work addresses."
+  },
+  {
+    bi: "BI 5",
+    q: "Which best describes the digital divide?",
+    opts: ["Only differences in internet access between countries", "Unequal access to devices, internet, AND the skills/outcomes to use them", "The gap between Wi-Fi and cellular speeds", "The compatibility difference between operating systems"],
+    correct: 1,
+    fb: "Three dimensions: access, use (skills/time/support), and outcome (who actually benefits)."
+  },
+  {
+    bi: "BI 5",
+    q: "Which is true about Creative Commons licenses?",
+    opts: ["Anything online is automatically Creative Commons", "They let creators share work with stated conditions (e.g., attribution required)", "They eliminate copyright protection", "They apply only to open-source software"],
+    correct: 1,
+    fb: "Creative Commons doesn't replace copyright — creators retain it while granting specific permissions like attribution-required or noncommercial."
+  },
+  {
+    bi: "BI 5",
+    q: "Which best distinguishes privacy from security?",
+    opts: ["Privacy is about hardware; security is about software", "Privacy is control over your information; security is protection from unauthorized access", "Privacy applies only to PII; security applies to all data", "They are the same concept with different names"],
+    correct: 1,
+    fb: "A system can be SECURE but privacy-invasive (locks up everything it collects). They overlap but aren't identical."
+  },
+  {
+    bi: "BI 5",
+    q: "A phishing email asks you to 'verify your account' via a link. The attacker is exploiting:",
+    opts: ["Algorithmic bias", "A flaw in the TCP protocol", "Human trust and behavior (social engineering)", "A buffer overflow"],
+    correct: 2,
+    fb: "Phishing exploits people, not systems. Technical defenses don't stop a user clicking a malicious link."
+  },
+  {
+    bi: "BI 5",
+    q: "Which is a DIRECT impact of widespread video conferencing technology?",
+    opts: ["Reduced demand for downtown office space", "Shifts in housing market demand toward suburbs", "Enabling remote meetings between people in different locations", "Increased revenue at local coffee shops near homes"],
+    correct: 2,
+    fb: "Direct = immediate, intended effect. The other options are INDIRECT downstream consequences."
+  },
+
+  // BIG IDEA 2 — Data (6)
+  {
+    bi: "BI 2",
+    q: "How many distinct values can 6 bits represent?",
+    opts: ["6", "12", "36", "64"],
+    correct: 3,
+    fb: "2^6 = 64 distinct patterns. (Max value is 63 — values are 0 to 2^n − 1.)"
+  },
+  {
+    bi: "BI 2",
+    q: "Convert binary 1011 to decimal.",
+    opts: ["9", "10", "11", "13"],
+    correct: 2,
+    fb: "1011 = 8 + 0 + 2 + 1 = 11. Powers of 2 from right: 1, 2, 4, 8."
+  },
+  {
+    bi: "BI 2",
+    q: "A digital photograph is 1024 px wide × 768 px tall, with 24-bit color. What is the uncompressed file size in BYTES?",
+    opts: ["786,432", "2,359,296", "18,874,368", "25,165,824"],
+    correct: 1,
+    fb: "Bits = 1024 × 768 × 24 = 18,874,368. Divide by 8 for bytes = 2,359,296. (Answer C is in bits, not bytes — units trap.)"
+  },
+  {
+    bi: "BI 2",
+    q: "Which is a feature of LOSSY compression but NOT lossless?",
+    opts: ["Reduces file size", "Some original information is permanently discarded", "The compressed file is usually a different format", "Works on text files"],
+    correct: 1,
+    fb: "Lossless preserves bit-for-bit; lossy permanently discards info. Both reduce file size."
+  },
+  {
+    bi: "BI 2",
+    q: "A study finds people who own umbrellas are more likely to experience rain. The most accurate conclusion is:",
+    opts: ["Umbrellas cause rain", "Rain causes umbrella ownership", "Correlation does not establish causation; a third factor (weather forecasts) likely influences both", "The data is statistically biased toward urban areas"],
+    correct: 2,
+    fb: "Classic correlation vs causation. Always look for hidden third factors before claiming A causes B."
+  },
+  {
+    bi: "BI 2",
+    q: "Why is the list [2, 1, 4, 9, 6] problematic for finding the minimum with this code?\n\nsmallest ← 0\nFOR EACH n IN list {\n  IF n < smallest { smallest ← n }\n}",
+    opts: ["The loop runs too many times", "The list is unsorted so it won't work", "smallest is initialized to 0, but no list element is less than 0, so it returns 0", "MOD is not used"],
+    correct: 2,
+    fb: "Classic 'initialize to 0' bug. Always initialize min/max to list[1] for safety — works for all value ranges including negatives."
+  },
+
+  // BIG IDEA 4 — Computer Systems & Networks (4)
+  {
+    bi: "BI 4",
+    q: "Which protocol provides reliable, ordered delivery of packets and retransmits lost ones?",
+    opts: ["IP", "TCP", "UDP", "DNS"],
+    correct: 1,
+    fb: "TCP = reliable + ordered + retransmits. UDP is fast but unreliable. IP just routes. DNS resolves names."
+  },
+  {
+    bi: "BI 4",
+    q: "A program takes 8 seconds to run sequentially. 6 seconds of the work can be parallelized across 3 processors equally. What is the minimum total runtime?",
+    opts: ["2 seconds", "4 seconds", "6 seconds", "8 seconds"],
+    correct: 1,
+    fb: "Sequential portion = 8 − 6 = 2 sec (unavoidable). Parallel 6 sec ÷ 3 = 2 sec each (longest = 2). Total = 2 + 2 = 4 sec. Sequential portion caps speedup."
+  },
+  {
+    bi: "BI 4",
+    q: "Why is DNS distributed across many servers worldwide?",
+    opts: ["Because IP addresses are too large for one server", "To prevent a single point of failure and provide scalability", "To make encryption stronger", "Because each website needs its own DNS server"],
+    correct: 1,
+    fb: "Distribution = scalability + fault tolerance + speed (nearby servers respond faster). No single point of failure."
+  },
+  {
+    bi: "BI 4",
+    q: "Which describes the relationship between bandwidth and throughput?",
+    opts: ["They are synonymous", "Bandwidth is the actual rate; throughput is the maximum capacity", "Throughput is generally less than bandwidth due to overhead and congestion", "Throughput is measured in bytes; bandwidth is measured in bits"],
+    correct: 2,
+    fb: "Bandwidth = MAX possible (highway lanes). Throughput = actually achieved (cars/hour). Always throughput ≤ bandwidth."
+  },
+
+  // BIG IDEA 1 — Creative Development (3)
+  {
+    bi: "BI 1",
+    q: "A program runs without crashing but consistently classifies all incoming emails as spam. This is most likely a:",
+    opts: ["Syntax error", "Runtime error", "Logic error", "Overflow error"],
+    correct: 2,
+    fb: "Runs without crashing but produces wrong output = LOGIC error. Syntax errors prevent running; runtime errors crash mid-execution."
+  },
+  {
+    bi: "BI 1",
+    q: "Which is the BEST example of a 'creative' choice when developing a study app?",
+    opts: ["Choosing variable names like score and count", "Deciding the app should serve high school students preparing for AP exams", "Following the language's required syntax for assignment", "Using ASCII rather than Unicode for English text"],
+    correct: 1,
+    fb: "Creative choices = purpose, audience, what the program should do. A, C, D are mechanical/required, not creative."
+  },
+  {
+    bi: "BI 1",
+    q: "Which is true about attribution when reusing code from an open-source project?",
+    opts: ["Open-source means no attribution required", "Attribution is required only if you copy code verbatim", "Attribution is required when reusing code, even if you modify it, per the project's license", "Attribution is needed only for code longer than 100 lines"],
+    correct: 2,
+    fb: "Open-source ≠ no rules. Most licenses require attribution even for modified work. Some add share-alike, noncommercial, etc."
+  }
+];
+
+// ─────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────
+const state = {
+  view: "home",        // "home" | "drill" | "test" | "cheat" | "done"
+  mode: null,          // "drill" or "test"
+  pool: [],            // shuffled question indices
+  i: 0,                // current index in pool
+  selected: null,      // chosen option index
+  locked: false,       // answer locked
+  results: []          // [{qIdx, picked, correct}, ...]
+};
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+const app = document.getElementById("app");
+
+// ─────────────────────────────────────────────────────────────
+// Views
+// ─────────────────────────────────────────────────────────────
+
+function viewHome() {
+  app.innerHTML = `
+    <header class="hd">
+      <div class="hd-title">
+        <h1>AP CSP Drill</h1>
+        <div class="sub">30 MCQs · exam-weighted</div>
+      </div>
+    </header>
+    <div class="modes">
+      <button class="mode-tile" data-mode="drill">
+        <div class="mode-h">⚡ Quick Drill</div>
+        <div class="mode-s">Shuffled questions, immediate feedback after each answer. No score pressure — just learn.</div>
+        <span class="mode-tag">recommended for tonight</span>
+      </button>
+      <button class="mode-tile" data-mode="test">
+        <div class="mode-h">📝 Full Practice Test</div>
+        <div class="mode-s">All 30 questions in order. Score at the end. Mirrors exam pacing.</div>
+        <span class="mode-tag">simulate test day</span>
+      </button>
+      <button class="mode-tile" data-mode="cheat" style="grid-column: 1 / -1;">
+        <div class="mode-h">📋 Cheat Sheet</div>
+        <div class="mode-s">High-frequency facts to memorize — pseudocode rules, key formulas, traps that always trick people.</div>
+        <span class="mode-tag">last-minute review</span>
+      </button>
+    </div>
+  `;
+  app.querySelectorAll(".mode-tile").forEach(el => {
+    el.addEventListener("click", () => {
+      const m = el.dataset.mode;
+      if (m === "cheat") {
+        state.view = "cheat";
+        viewCheat();
+      } else {
+        startQuiz(m);
+      }
+    });
+  });
+}
+
+function startQuiz(mode) {
+  state.mode = mode;
+  state.view = mode;
+  state.pool = mode === "drill"
+    ? shuffle(QUESTIONS.map((_, i) => i))
+    : QUESTIONS.map((_, i) => i);
+  state.i = 0;
+  state.selected = null;
+  state.locked = false;
+  state.results = [];
+  renderQuiz();
+}
+
+function renderQuiz() {
+  const qIdx = state.pool[state.i];
+  const q = QUESTIONS[qIdx];
+  const progress = ((state.i) / state.pool.length) * 100;
+  const score = state.results.filter(r => r.picked === QUESTIONS[r.qIdx].correct).length;
+
+  const optHTML = q.opts.map((opt, i) => {
+    let cls = "opt";
+    if (state.locked) {
+      if (i === q.correct) cls += " correct";
+      else if (i === state.selected) cls += " wrong";
+      else cls += " dim";
+    }
+    return `
+      <button class="opt" data-i="${i}" ${state.locked ? "disabled" : ""}>
+        <span class="opt-letter">${"ABCD"[i]}</span>
+        <span>${escapeHTML(opt)}</span>
+      </button>
+    `;
+  }).join("");
+
+  const fbHTML = state.locked ? `
+    <div class="fb ${state.selected === q.correct ? "ok" : "no"}">
+      <strong>${state.selected === q.correct ? "✓ Correct." : "✗ Not quite."}</strong> ${escapeHTML(q.fb)}
+    </div>
+  ` : "";
+
+  const isLast = state.i === state.pool.length - 1;
+
+  app.innerHTML = `
+    <header class="hd">
+      <div class="hd-title">
+        <h1>${state.mode === "test" ? "Practice Test" : "Quick Drill"}</h1>
+        <div class="sub">${state.i + 1} of ${state.pool.length}</div>
+      </div>
+      <div class="hd-stats">
+        <div class="stat">Score: <strong>${score}/${state.results.length}</strong></div>
+        <button class="btn" id="quit">Home</button>
+      </div>
+    </header>
+    <div class="pg"><div class="pg-bar" style="width: ${progress}%"></div></div>
+    <div class="card">
+      <div class="qmeta">
+        <span class="tag">${q.bi}</span>
+        <span>Question ${state.i + 1}</span>
+      </div>
+      <div class="qtext">${formatQ(q.q)}</div>
+      <div class="opts">${optHTML}</div>
+      ${fbHTML}
+      <div class="actions">
+        <div class="left">${state.locked ? "" : "Pick one · <kbd>A</kbd>–<kbd>D</kbd>"}</div>
+        <div class="right">
+          ${state.locked ? `<button class="btn csp" id="next">${isLast ? "Finish" : "Next →"}</button>` : ""}
+        </div>
+      </div>
+    </div>
+  `;
+
+  app.querySelectorAll(".opt").forEach(btn => {
+    btn.addEventListener("click", () => {
+      if (state.locked) return;
+      pickOption(parseInt(btn.dataset.i, 10));
+    });
+  });
+  const nextBtn = document.getElementById("next");
+  if (nextBtn) nextBtn.addEventListener("click", advance);
+  document.getElementById("quit").addEventListener("click", goHome);
+}
+
+function pickOption(i) {
+  state.selected = i;
+  state.locked = true;
+  const qIdx = state.pool[state.i];
+  state.results.push({ qIdx, picked: i });
+  renderQuiz();
+}
+
+function advance() {
+  if (state.i >= state.pool.length - 1) {
+    viewDone();
+  } else {
+    state.i++;
+    state.selected = null;
+    state.locked = false;
+    renderQuiz();
+  }
+}
+
+function viewDone() {
+  state.view = "done";
+  const correct = state.results.filter(r => r.picked === QUESTIONS[r.qIdx].correct).length;
+  const total = state.results.length;
+  const pct = Math.round((correct / total) * 100);
+
+  let verdict;
+  if (pct >= 90) verdict = "Solid 4–5 territory. Sleep well.";
+  else if (pct >= 73) verdict = "On the 3–4 track. Skim the cheat sheet once more in the morning.";
+  else if (pct >= 57) verdict = "Reread the study guide tonight, focus on the Big Ideas you missed most.";
+  else verdict = "Focus on Big Idea 3 (Algorithms) — biggest weight, biggest swing. Trace more pseudocode slowly.";
+
+  const wrong = state.results.filter(r => r.picked !== QUESTIONS[r.qIdx].correct);
+  const reviewHTML = wrong.length === 0 ? "" : `
+    <div class="reviews">
+      <h3 style="color: var(--csp); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 12px;">Review these</h3>
+      ${wrong.map(r => {
+        const q = QUESTIONS[r.qIdx];
+        return `
+          <div class="review">
+            <div class="rq">[${q.bi}] ${escapeHTML(q.q.split("\n")[0])}</div>
+            <div class="rans">Your answer: ${"ABCD"[r.picked]} · Correct: ${"ABCD"[q.correct]}</div>
+            <div class="rans" style="margin-top: 6px;">${escapeHTML(q.fb)}</div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+  `;
+
+  app.innerHTML = `
+    <header class="hd">
+      <div class="hd-title">
+        <h1>Done</h1>
+        <div class="sub">${state.mode === "test" ? "Practice test" : "Quick drill"} complete</div>
+      </div>
+      <div class="hd-stats">
+        <button class="btn" id="home2">Home</button>
+      </div>
+    </header>
+    <div class="done">
+      <h2><span class="pct">${correct}</span> <span style="color: var(--text-3); font-size: 32px;">/ ${total}</span></h2>
+      <div class="verdict">${pct}% · ${verdict}</div>
+      <div class="right" style="display: flex; gap: 8px; justify-content: center; margin-top: 18px;">
+        <button class="btn" id="again">↻ Try again</button>
+        <button class="btn csp" id="cheat2">📋 Cheat sheet</button>
+      </div>
+      ${reviewHTML}
+    </div>
+  `;
+  document.getElementById("home2").addEventListener("click", goHome);
+  document.getElementById("again").addEventListener("click", () => startQuiz(state.mode));
+  document.getElementById("cheat2").addEventListener("click", () => { state.view = "cheat"; viewCheat(); });
+}
+
+function viewCheat() {
+  app.innerHTML = `
+    <header class="hd">
+      <div class="hd-title">
+        <h1>Cheat Sheet</h1>
+        <div class="sub">memorize before the exam</div>
+      </div>
+      <div class="hd-stats">
+        <button class="btn" id="back">← Home</button>
+      </div>
+    </header>
+    <div class="cheat">
+
+      <h3>Pseudocode rules — never forget</h3>
+      <ul>
+        <li>Lists are <strong>1-indexed</strong> in AP pseudocode</li>
+        <li><code>REPEAT UNTIL cond</code> stops when cond becomes <strong>TRUE</strong> (continues while FALSE)</li>
+        <li><code>RANDOM(a, b)</code> is <strong>inclusive of both endpoints</strong></li>
+        <li><code>RETURN value</code> ends procedure; <code>DISPLAY</code> only outputs and can't be captured</li>
+        <li>Initialize max/min to <code>list[1]</code>, never to <code>0</code></li>
+        <li><code>x ← x + 1</code> is valid — overwrite, not equation</li>
+      </ul>
+
+      <h3>Bit math</h3>
+      <ul>
+        <li><strong>n bits</strong> → 2ⁿ patterns; max unsigned = 2ⁿ − 1</li>
+        <li><strong>Image bits</strong> = width × height × bitsPerPixel · ÷8 for bytes</li>
+        <li><strong>Audio bits</strong> = seconds × sampleRate × bitDepth × channels</li>
+        <li>24-bit color = 2²⁴ ≈ 16.7 million colors</li>
+        <li>Overflow = result exceeds bit range, wraps to 0</li>
+      </ul>
+
+      <h3>Logic — De Morgan's</h3>
+      <ul>
+        <li><code>NOT(A AND B)</code> = <code>(NOT A) OR (NOT B)</code></li>
+        <li><code>NOT(A OR B)</code> = <code>(NOT A) AND (NOT B)</code></li>
+        <li>AND flips to OR. OR flips to AND.</li>
+      </ul>
+
+      <h3>Search & efficiency</h3>
+      <ul>
+        <li><strong>Linear search</strong> — any list, O(n)</li>
+        <li><strong>Binary search</strong> — <strong>sorted only</strong>, O(log n)</li>
+        <li><strong>Decidable</strong> — algorithm exists for all inputs</li>
+        <li><strong>Undecidable</strong> — no algorithm exists, period (Halting Problem)</li>
+        <li>"Computationally expensive" ≠ "undecidable"</li>
+        <li><strong>Heuristic</strong> — good-enough shortcut, not guaranteed optimal</li>
+      </ul>
+
+      <h3>Errors — name them on sight</h3>
+      <table>
+        <tr><th>Type</th><th>Trigger</th></tr>
+        <tr><td><strong>Syntax</strong></td><td>language rule broken; won't run</td></tr>
+        <tr><td><strong>Runtime</strong></td><td>crashes mid-execution (div by 0)</td></tr>
+        <tr><td><strong>Logic</strong></td><td>runs, wrong output</td></tr>
+        <tr><td><strong>Overflow</strong></td><td>result exceeds bit range</td></tr>
+      </table>
+
+      <h3>Protocols — one line each</h3>
+      <table>
+        <tr><th>Protocol</th><th>Role</th></tr>
+        <tr><td><strong>IP</strong></td><td>addressing & routing (best effort)</td></tr>
+        <tr><td><strong>TCP</strong></td><td>reliable, ordered, retransmits</td></tr>
+        <tr><td><strong>UDP</strong></td><td>fast, unreliable — streaming/games</td></tr>
+        <tr><td><strong>HTTP</strong></td><td>web requests (over TCP)</td></tr>
+        <tr><td><strong>HTTPS</strong></td><td>HTTP + encryption + certificate (CA)</td></tr>
+        <tr><td><strong>DNS</strong></td><td>domain → IP (distributed phonebook)</td></tr>
+      </table>
+
+      <h3>Network performance</h3>
+      <ul>
+        <li><strong>Bandwidth</strong> — max capacity (highway lanes)</li>
+        <li><strong>Latency</strong> — one-way travel time</li>
+        <li><strong>Throughput</strong> — actual rate achieved (always ≤ bandwidth)</li>
+        <li>ISPs advertise in <strong>bits</strong>/sec; files in <strong>bytes</strong> — 8× difference</li>
+        <li>DNS down ≠ site down (browser can't find IP, but site is up)</li>
+      </ul>
+
+      <h3>Parallel timing rule</h3>
+      <ul>
+        <li>Total time = sequential portion + <strong>longest</strong> parallel task</li>
+        <li>NOT sum of all parallel tasks (they run together)</li>
+        <li>Sequential portion <strong>caps speedup</strong> — doubling processors does NOT halve runtime</li>
+      </ul>
+
+      <h3>Compression</h3>
+      <ul>
+        <li><strong>Lossless</strong> — bit-perfect reconstruction (ZIP, PNG)</li>
+        <li><strong>Lossy</strong> — info discarded forever (JPEG, MP3)</li>
+        <li>Loss happens at COMPRESS time, not on each open</li>
+        <li>Random data compresses poorly — needs repetition</li>
+      </ul>
+
+      <h3>Impact / Ethics</h3>
+      <ul>
+        <li><strong>Privacy</strong> = control over your info · <strong>Security</strong> = protection from unauthorized access (NOT the same)</li>
+        <li>"Anonymous" data can be re-identified by inference</li>
+        <li>Digital divide = access + use (skills) + outcome — three dimensions</li>
+        <li>Algorithmic bias sources: data, labels, goals, deployment context</li>
+        <li>Feedback loops amplify bias (predictive policing → more patrols → more incidents → more patrols)</li>
+        <li>Open source ≠ no rules — most licenses require attribution</li>
+        <li>"The computer decided" is never an excuse — humans choose data, labels, goals</li>
+      </ul>
+
+      <h3>Big Idea exam weights</h3>
+      <table>
+        <tr><th>Big Idea</th><th>Weight</th></tr>
+        <tr><td>3 — Algorithms & Programming</td><td><strong>30-35%</strong></td></tr>
+        <tr><td>5 — Impact of Computing</td><td>21-26%</td></tr>
+        <tr><td>2 — Data</td><td>17-22%</td></tr>
+        <tr><td>4 — Computer Systems & Networks</td><td>11-15%</td></tr>
+        <tr><td>1 — Creative Development</td><td>10-13%</td></tr>
+      </table>
+
+      <h3>Test-day strategy</h3>
+      <ul>
+        <li>70 MCQ in 120 min ≈ <strong>1:42 per question</strong></li>
+        <li>Flag-and-skip anything > 2 min — come back later</li>
+        <li>No penalty for wrong answers — never leave blank</li>
+        <li>If two options look near-identical, the answer is usually one of them</li>
+      </ul>
+
+    </div>
+  `;
+  document.getElementById("back").addEventListener("click", goHome);
+}
+
+function goHome() {
+  state.view = "home";
+  state.results = [];
+  viewHome();
+}
+
+// ─────────────────────────────────────────────────────────────
+// Utils
+// ─────────────────────────────────────────────────────────────
+function escapeHTML(s) {
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+}
+
+function formatQ(s) {
+  // If question contains code-like content (multiple lines with indents), wrap that part in <pre>
+  if (s.includes("\n")) {
+    const lines = s.split("\n");
+    const firstLine = lines[0];
+    const rest = lines.slice(1).join("\n");
+    if (rest.trim()) {
+      return `<div>${escapeHTML(firstLine)}</div><pre>${escapeHTML(rest)}</pre>`;
+    }
+  }
+  return escapeHTML(s);
+}
+
+// Keyboard shortcuts
+document.addEventListener("keydown", (e) => {
+  if (state.view !== "drill" && state.view !== "test") return;
+  if (!state.locked) {
+    const idx = "abcd".indexOf(e.key.toLowerCase());
+    if (idx >= 0) { pickOption(idx); e.preventDefault(); }
+  } else {
+    if (e.key === "Enter" || e.key === " " || e.key === "ArrowRight") {
+      advance(); e.preventDefault();
+    }
+  }
+});
+
+// Boot
+viewHome();
+</script>
+</body>
+</html>

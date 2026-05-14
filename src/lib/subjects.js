@@ -36,7 +36,7 @@ export const AP_SUBJECTS = [
   // { id: "ap-precalc",       name: "AP Precalculus",                        short: "Precalc",       icon: "📐", color: "#e69a7a", category: "Math" },
   // { id: "ap-stats",         name: "AP Statistics",                         short: "Stats",         icon: "📉", color: "#d9844f", category: "Math" },
   // { id: "ap-csa",           name: "AP Computer Science A",                 short: "CS A",          icon: "💻", color: "#2d6a8a", category: "CS" },
-  // { id: "ap-csp",           name: "AP Computer Science Principles",        short: "CSP",           icon: "🖥️", color: "#3a87ab", category: "CS" },
+  { id: "ap-csp",           name: "AP Computer Science Principles",        short: "CSP",           icon: "🖥️", color: "#3a87ab", category: "CS" },
 
   // Sciences
   // { id: "ap-bio",           name: "AP Biology",                            short: "Bio",           icon: "🧬", color: "#5ba85c", category: "Science" },

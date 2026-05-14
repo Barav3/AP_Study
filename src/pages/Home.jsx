@@ -41,35 +41,26 @@ export default function Home() {
     });
   }, [subjects, category, query]);
 
-  const liveCount = subjects.filter((s) => (activityCounts[s.id] || 0) > 0).length;
-
   return (
     <div className="home">
       <header className="home-header">
         <div className="home-wordmark">
           <h1>IJsMadeSomeBullshit</h1>
-          <span className="tagline">select a subject · open a world</span>
-          {liveCount > 0 && (
-            <span className="live-pill">
-              <span className="dot" />
-              {liveCount} live {liveCount === 1 ? "slot" : "slots"}
-            </span>
-          )}
+          <span className="tagline">select a subject</span>
         </div>
 
         <div className="home-controls">
           <div className="search-wrap">
-            <span className="search-icon" aria-hidden>⌕</span>
             <input
               className="input"
-              placeholder="search subjects…"
+              placeholder="Search subjects"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search subjects"
             />
           </div>
-          <Link to="/guide" className="btn">guide</Link>
-          <Link to="/admin" className="btn">admin</Link>
+          <Link to="/guide" className="btn">Guide</Link>
+          <Link to="/admin" className="btn">Admin</Link>
         </div>
       </header>
 

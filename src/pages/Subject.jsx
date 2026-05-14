@@ -79,10 +79,7 @@ export default function Subject() {
               {" / "}
               <strong>{currentActivity.name}</strong>
             </span>
-            <span className="topbar-live">
-              <span className="topbar-live-dot" />
-              live
-            </span>
+            <span className="topbar-live">live</span>
           </div>
           <div className="topbar-actions">
             {currentActivity.deploy_mode === "url" && currentActivity.deploy_url && (
